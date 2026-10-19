@@ -32,6 +32,13 @@ export default function Copilot({ ctx }) {
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState(null)
+  const [elapsed, setElapsed] = useState(0)
+  useEffect(() => {
+    if (!busy) return undefined
+    setElapsed(0)
+    const id = window.setInterval(() => setElapsed((s) => s + 1), 1000)
+    return () => window.clearInterval(id)
+  }, [busy])
   const end = useRef(null)
   useEffect(() => { if (open && !status) api('/api/v1/copilot/status').then(setStatus).catch(() => {}) }, [open, status])
   useEffect(() => { end.current?.scrollIntoView({ behavior: 'smooth' }) }, [msgs, busy])
@@ -44,7 +51,8 @@ export default function Copilot({ ctx }) {
     setBusy(true)
     try {
       const r = await api('/api/v1/copilot/chat', { method: 'POST', json: { message: q, history } })
-      setMsgs((m) => [...m, { role: 'assistant', content: r.answer, data: r.data, mode: r.mode, tools: r.tools }])
+      setMsgs((m) => [...m, { role: 'assistant', content: r.answer, data: r.data, mode: r.mode, tools: r.tools, model: r.model }])
+      if (r.model) setStatus((st) => (st ? { ...st, model: r.model } : st))
     } catch (e) { setMsgs((m) => [...m, { role: 'assistant', content: `Error: ${e.message}`, mode: 'error' }]) } finally { setBusy(false) }
   }
   return <>
@@ -60,9 +68,9 @@ export default function Copilot({ ctx }) {
           <div className="flex flex-wrap gap-1.5">{(SUGGESTIONS[i18n.language] || SUGGESTIONS.en).map((s) => <button key={s} className="chip !text-[.75rem] hover:brightness-95" onClick={() => send(s)}>{s}</button>)}</div></div>}
         {msgs.map((m, i) => <div key={i} className={m.role === 'user' ? 'ml-10 rounded-xl px-3 py-2' : 'mr-4'} style={m.role === 'user' ? { background: 'var(--brand-soft)' } : undefined}>
           {m.role === 'user' ? m.content : <><Md text={m.content} /><DataPeek data={m.data} />
-            <div className="mt-1.5 flex items-center gap-3 text-[.7rem] muted">{m.tools?.length > 0 && <span>Tools: {m.tools.map((x) => x.name).join(', ')}</span>}<button className="underline" onClick={() => speak(m.content, i18n.language)}>{t('t.read_aloud')}</button></div></>}
+            <div className="mt-1.5 flex items-center gap-3 text-[.7rem] muted">{m.model && <span>{m.model}</span>}{m.tools?.length > 0 && <span>Tools: {m.tools.map((x) => x.name).join(', ')}</span>}<button className="underline" onClick={() => speak(m.content, i18n.language)}>{t('t.read_aloud')}</button></div></>}
         </div>)}
-        {busy && <div className="muted">…</div>}
+        {busy && <div className="flex items-center gap-2 muted" role="status"><span className="skeleton inline-block size-2.5 rounded-full" />Thinking… {elapsed}s{elapsed > 15 ? ' (looking up the data)' : ''}</div>}
         <div ref={end} />
       </div>
       <form className="flex gap-2 border-t p-3" style={{ borderColor: 'var(--border)' }} onSubmit={(e) => { e.preventDefault(); send() }}>

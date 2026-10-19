@@ -71,7 +71,7 @@ Optional environment variables:
 
 | Variable | Purpose |
 |---|---|
-| `GEMINI_API_KEY` | Google Gemini key (from Google AI Studio). Enables Gemini for the copilot, DSDP narratives and hard NCO titles (default model `gemini-2.5-flash`; override with `SKILLSIGHT_GEMINI_MODEL`). Without it, everything works offline. `GOOGLE_API_KEY` is also accepted. |
+| `GEMINI_API_KEY` | Google Gemini key (from Google AI Studio). Enables Gemini for the copilot, DSDP narratives and hard NCO titles (default model `gemini-3.8-flash`; override with `SKILLSIGHT_GEMINI_MODEL`). Without it, everything works offline. `GOOGLE_API_KEY` is also accepted. |
 | `SKILLSIGHT_REFRESH_HOURS` | Scheduled refresh interval (default 24; 0 disables) |
 | `SKILLSIGHT_DB` | Database path (default `data/skillsight.db`) |
 | `FIREBASE_PROJECT_ID` + `frontend/.env.local` `VITE_FIREBASE_*` | Turn on sign-in. Grant planner rights with `python -m backend.set_firebase_role <UID> planner`. |

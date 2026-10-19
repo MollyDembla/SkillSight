@@ -158,9 +158,9 @@ def test_gemini_copilot_function_calling_loop(client,monkeypatch):
   if len(calls)==1:
    fc=SimpleNamespace(name='query_gaps',args={'state':'Odisha','status':'Acute shortage','limit':3})
    content=types.Content(role='model',parts=[types.Part.from_function_call(name='query_gaps',args=fc.args)])
-   return SimpleNamespace(candidates=[SimpleNamespace(content=content)],function_calls=[fc],text=None)
+   return SimpleNamespace(candidates=[SimpleNamespace(content=content)],function_calls=[fc],text=None),'fake-model'
   assert contents[-1].parts[0].function_response.response['result']  # tool output was sent back
-  return SimpleNamespace(candidates=[SimpleNamespace(content=types.Content(role='model',parts=[types.Part.from_text(text='done')]))],function_calls=None,text='Odisha shortages: ...')
+  return SimpleNamespace(candidates=[SimpleNamespace(content=types.Content(role='model',parts=[types.Part.from_text(text='done')]))],function_calls=None,text='Odisha shortages: ...'),'fake-model'
  monkeypatch.setattr(llm,'available',lambda:True);monkeypatch.setattr(llm,'_generate',fake_generate)
  r=client.post('/api/v1/copilot/chat',json={'message':'shortages in Odisha?'}).json()
  assert r['mode']=='gemini' and r['tools'][0]['name']=='query_gaps' and r['data']['rows'] and len(calls)==2

@@ -350,7 +350,7 @@ def copilot(body: ChatIn):
 
 @router.get("/copilot/status", tags=["ai"])
 def copilot_status():
-    return {"llm_available": llm.available(), "provider": "Google Gemini", "model": llm.MODEL if llm.available() else None, "mode": "gemini" if llm.available() else "offline"}
+    return {"llm_available": llm.available(), "provider": "Google Gemini", "model": (llm._health["preferred"] or llm.MODEL) if llm.available() else None, "mode": "gemini" if llm.available() else "offline"}
 
 
 class ClassifyIn(BaseModel):

@@ -7,7 +7,7 @@ import json, os, re
 from . import catalog, resolve, services
 from .db import connect
 
-MODEL = os.getenv("SKILLSIGHT_GEMINI_MODEL", "gemini-2.5-flash")
+MODEL = os.getenv("SKILLSIGHT_GEMINI_MODEL", "gemini-3.8-flash")
 LANG_NAMES = {"en": "English", "hi": "Hindi", "kn": "Kannada", "mr": "Marathi", "or": "Odia"}
 _client = None
 
@@ -24,13 +24,69 @@ def client():
     global _client
     if _client is None:
         from google import genai
-        _client = genai.Client(api_key=_api_key())
+        from google.genai import types
+        # 45 s per request; our own fallback chain handles retries, so turn the SDK's retries off.
+        _client = genai.Client(api_key=_api_key(), http_options=types.HttpOptions(timeout=45_000, retry_options=types.HttpRetryOptions(attempts=1)))
     return _client
 
 
-def _generate(contents, **config):
-    from google.genai import types
-    return client().models.generate_content(model=MODEL, contents=contents, config=types.GenerateContentConfig(**config))
+# Tried in order when the primary model is overloaded (503) or rate-limited (429).
+FALLBACK_MODELS = [m.strip() for m in os.getenv("SKILLSIGHT_GEMINI_FALLBACKS",
+    "gemini-3.7-flash,gemini-3.5-flash,gemini-3-flash-preview,gemini-flash-latest,gemini-3.5-flash-lite,gemini-flash-lite-latest").split(",") if m.strip()]
+
+
+_health = {"preferred": None, "cooldown": {}}   # last working model; model -> unix time it may be retried
+
+
+def _chain(models: list[str] | None) -> list[str]:
+    import time
+    if models:
+        return models
+    base = list(dict.fromkeys(([_health["preferred"]] if _health["preferred"] else []) + [MODEL] + FALLBACK_MODELS))
+    ready = [m for m in base if _health["cooldown"].get(m, 0) <= time.time()]
+    return ready or base
+
+
+def _cooldown_seconds(e, code: int) -> float:
+    """Daily free-tier quota errors carry a retryDelay (often hours); honour it. Otherwise back off briefly."""
+    if code == 404:
+        return 24 * 3600
+    try:
+        for d in (e.details or {}).get("error", {}).get("details", []):
+            if "retryDelay" in d:
+                return max(60.0, float(str(d["retryDelay"]).rstrip("s")))
+    except (AttributeError, ValueError, TypeError):
+        pass
+    return 300.0
+
+
+def _generate(contents, models: list[str] | None = None, **config):
+    """generate_content over a model chain. Overloaded / rate-limited / retired models are skipped for a few
+    minutes and the last working model is tried first, so a busy model costs one fast failure, not one per call.
+    Returns (response, model)."""
+    import time
+    from google.genai import errors, types
+    last_error = None
+    for model in _chain(models):
+        cfg = dict(config)
+        for _attempt in range(2):
+            try:
+                resp = client().models.generate_content(model=model, contents=contents, config=types.GenerateContentConfig(**cfg))
+                _health["preferred"] = model
+                return resp, model
+            except errors.APIError as e:
+                code = getattr(e, "code", 0) or 0
+                last_error = e
+                if code == 400 and "thinking" in str(e).lower() and "thinking_config" in cfg:
+                    cfg.pop("thinking_config")  # some (lite) models reject thinking settings; retry without
+                    continue
+                if code in (404, 429) or code >= 500:
+                    _health["cooldown"][model] = time.time() + _cooldown_seconds(e, code)
+                    if _health["preferred"] == model:
+                        _health["preferred"] = None
+                    break
+                raise
+    raise last_error
 
 
 # ------------------------------------------------------------------ copilot tools
@@ -148,15 +204,18 @@ def chat(question: str, history: list[dict], state_obj: dict) -> dict:
     contents.append(types.Content(role="user", parts=[types.Part.from_text(text=question)]))
     used, last = [], None
     tools = _gemini_tools()
+    pinned = None
     try:
         for _ in range(6):
-            resp = _generate(contents, system_instruction=SYSTEM, tools=tools, temperature=0.2,
+            resp, used_model = _generate(contents, models=pinned, system_instruction=SYSTEM, tools=tools, temperature=0.2,
+                                         thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.LOW),
                              automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True))
+            pinned = [used_model]  # thought signatures are model-specific: stay on this model
             if not resp.candidates or resp.candidates[0].content is None:
                 return {"answer": "I can't help with that request. Please ask about skill demand, supply, gaps or training plans.", "mode": "gemini", "tools": used}
             calls = resp.function_calls or []
             if not calls:
-                return {"answer": (resp.text or "").strip(), "mode": "gemini", "model": MODEL, "tools": used, "data": last}
+                return {"answer": (resp.text or "").strip(), "mode": "gemini", "model": used_model, "tools": used, "data": last}
             # Keep the model turn as returned (it carries thought signatures required by newer Gemini models).
             contents.append(resp.candidates[0].content)
             parts = []
@@ -254,7 +313,7 @@ def dsdp_narrative(facts: dict, lang: str = "en") -> dict:
             prompt = (f"Write the executive summary of a District Skill Development Plan for {facts['district']} ({facts['state']}) in {LANG_NAMES.get(lang, 'English')}. "
                       "Use only the facts in the JSON below; do not add numbers. 3 short paragraphs (situation, priorities, actions for the next training cycle), "
                       "about 220 words, plain text without markdown headings.\n\n" + json.dumps(facts, default=str))
-            resp = _generate(prompt, temperature=0.3)
+            resp, _ = _generate(prompt, temperature=0.3)
             if resp.text:
                 return {"text": resp.text.strip(), "mode": "gemini"}
         except Exception:
@@ -289,7 +348,7 @@ def llm_code_titles(items: list[dict]) -> list[dict] | None:
     prompt = ("Assign each job posting to the best matching NCO-2015 code from this list, or 'UNCLASSIFIED' if none fits.\n" + codes + "\n\nPostings:\n" +
               "\n".join(f"{i}. {x['title']} | {x.get('description', '')[:300]}" for i, x in enumerate(items)))
     try:
-        resp = _generate(prompt, temperature=0, response_mime_type="application/json", response_json_schema=schema)
+        resp, _ = _generate(prompt, temperature=0, response_mime_type="application/json", response_json_schema=schema)
         return json.loads(resp.text)["results"]
     except Exception:
         return None
