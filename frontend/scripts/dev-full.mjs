@@ -5,8 +5,8 @@ import { fileURLToPath } from 'node:url'
 
 const frontend = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const root = resolve(frontend, '..')
-const venvPython = resolve(root, '.venv', 'Scripts', 'python.exe')
-const python = process.env.PYTHON || (existsSync(venvPython) ? venvPython : 'python')
+const venvPython = [resolve(root, '.venv', 'Scripts', 'python.exe'), resolve(root, '.venv', 'bin', 'python')].find(existsSync)
+const python = process.env.PYTHON || venvPython || (process.platform === 'win32' ? 'python' : 'python3')
 const processes = [
   spawn(python, ['-m', 'uvicorn', 'backend.app:app'], { cwd: root, stdio: 'inherit', env: process.env }),
   spawn(process.execPath, [resolve(frontend, 'node_modules', 'vite', 'bin', 'vite.js'), '--host', '127.0.0.1'], { cwd: frontend, stdio: 'inherit', env: process.env }),

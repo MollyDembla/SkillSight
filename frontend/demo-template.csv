@@ -1,2 +1,4 @@
-period,state,district,sector,occupation_code,occupation_title,demand_count,training_seats,quality_note
-2026-01,Example State,Example District,Example Sector,DEMO-001,Example occupation,25,20,Replace this row with a quality note or leave blank
+period,state,district,occupation,value
+2026-09,Karnataka,Bangalore,Solar technician,40
+2026-09,Orissa,Bhubaneswar,ward boy,22
+2026-09,UP,Noida,Data entry operator,65

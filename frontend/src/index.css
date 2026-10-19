@@ -1,12 +1,110 @@
 @import "tailwindcss";
 
-:root { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #1a2c40; background: #f5f7f9; font-synthesis: none; text-rendering: optimizeLegibility; }
+/* Design tokens (light / dark / high-contrast). Components reference roles, never raw hex. */
+:root {
+  color-scheme: light;
+  --page: #f4f5f2;
+  --surface: #ffffff;
+  --surface-2: #f7f7f4;
+  --border: #e3e2dc;
+  --ink: #12181f;
+  --ink-2: #4c5560;
+  --muted: #7f8790;
+  --grid: #ebeae4;
+  --axis: #c3c2b7;
+  --brand: #0f6e66;
+  --brand-ink: #ffffff;
+  --brand-soft: #e3f1ee;
+  --focus: #1c64f2;
+  --s-acute: #a8201e;
+  --s-short: #e0564f;
+  --s-short-soft: #f5b7b0;
+  --s-bal: #dedcd5;
+  --s-sat-soft: #a9cbf2;
+  --s-sat: #3987e5;
+  --s-over: #1c5cab;
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --band: rgba(42, 120, 214, 0.16);
+  --good: #0ca30c;
+  --warn: #b97800;
+  --crit: #d03b3b;
+  --nodata: #eeede8;
+  --shadow: 0 1px 2px rgba(16, 24, 40, .05), 0 1px 3px rgba(16, 24, 40, .04);
+  font-size: 15px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-theme="contrast"]) {
+    color-scheme: dark;
+    --page: #0f1113; --surface: #181a1c; --surface-2: #202326; --border: #2d3135; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #9a9890;
+    --grid: #2a2d30; --axis: #45484c; --brand: #2bb3a3; --brand-ink: #071311; --brand-soft: #123331; --focus: #7aa7ff;
+    --s-acute: #ff6b66; --s-short: #e5534b; --s-short-soft: #8c3a35; --s-bal: #5f6159; --s-sat-soft: #2f5a8c; --s-sat: #3987e5; --s-over: #7fb2f0;
+    --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --band: rgba(57, 135, 229, 0.22); --nodata: #24272a;
+    --shadow: none;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0f1113; --surface: #181a1c; --surface-2: #202326; --border: #2d3135; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #9a9890;
+  --grid: #2a2d30; --axis: #45484c; --brand: #2bb3a3; --brand-ink: #071311; --brand-soft: #123331; --focus: #7aa7ff;
+  --s-acute: #ff6b66; --s-short: #e5534b; --s-short-soft: #8c3a35; --s-bal: #5f6159; --s-sat-soft: #2f5a8c; --s-sat: #3987e5; --s-over: #7fb2f0;
+  --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --band: rgba(57, 135, 229, 0.22); --nodata: #24272a;
+  --shadow: none;
+}
+:root[data-theme="contrast"] {
+  color-scheme: light;
+  --page: #ffffff; --surface: #ffffff; --surface-2: #ffffff; --border: #000000; --ink: #000000; --ink-2: #000000; --muted: #222222;
+  --grid: #9a9a9a; --axis: #000000; --brand: #003d8f; --brand-ink: #ffffff; --brand-soft: #dbe8ff; --focus: #ff7a00;
+  --s-acute: #7a0000; --s-short: #c40000; --s-short-soft: #ff9c9c; --s-bal: #d0d0d0; --s-sat-soft: #8cbcff; --s-sat: #0047b3; --s-over: #001f5c;
+}
+:root[data-size="lg"] { font-size: 17px; }
+:root[data-size="xl"] { font-size: 19px; }
+
+@layer base {
 * { box-sizing: border-box; }
-body { margin: 0; min-width: 360px; min-height: 100vh; }
-button, input, select { font: inherit; }
+html, body { background: var(--page); color: var(--ink); }
+body { margin: 0; min-width: 320px; font-family: Inter, "Noto Sans", "Noto Sans Devanagari", "Noto Sans Kannada", "Noto Sans Oriya", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; text-rendering: optimizeLegibility; }
+button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
-.chart-grid { stroke: #e8edf1; stroke-width: 1; }
-.chart-line { fill: none; stroke: #137e78; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
-.chart-area { fill: #e5f3f0; }
-.chart-label { fill: #8492a0; font: 11px Inter, sans-serif; }
-.bar-fill { fill: #5a9e97; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+.skip-link { position: absolute; left: -9999px; top: 8px; z-index: 100; background: var(--brand); color: var(--brand-ink); padding: 8px 12px; border-radius: 6px; }
+.skip-link:focus { left: 8px; }
+.tabular { font-variant-numeric: tabular-nums; }
+
+}
+
+/* Component classes live in the components layer so Tailwind utilities (e.g. lg:hidden) can override them. */
+@layer components {
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); }
+.muted { color: var(--muted); }
+.ink2 { color: var(--ink-2); }
+.input { height: 2.4rem; border: 1px solid var(--border); background: var(--surface); border-radius: 8px; padding: 0 .65rem; font-size: .85rem; min-width: 0; }
+.input:focus { border-color: var(--brand); outline: none; box-shadow: 0 0 0 3px var(--brand-soft); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; min-height: 2.3rem; padding: .45rem .85rem; border-radius: 8px; font-size: .82rem; font-weight: 600; border: 1px solid var(--border); background: var(--surface); transition: filter .15s, background .15s; text-decoration: none; color: var(--ink); }
+.btn:hover { background: var(--surface-2); }
+.btn-primary { background: var(--brand); color: var(--brand-ink); border-color: var(--brand); }
+.btn-primary:hover { background: var(--brand); filter: brightness(1.08); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.nav-item { display: flex; align-items: center; gap: .65rem; width: 100%; padding: .55rem .7rem; border-radius: 8px; font-size: .84rem; color: var(--ink-2); text-align: left; border: 0; background: transparent; }
+.nav-item:hover { background: var(--surface-2); color: var(--ink); }
+.nav-item[aria-current="page"] { background: var(--brand-soft); color: var(--brand); font-weight: 650; }
+.tbl { width: 100%; border-collapse: collapse; font-size: .8rem; }
+.tbl th { position: sticky; top: 0; background: var(--surface-2); color: var(--muted); font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; text-align: left; padding: .55rem .6rem; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.tbl td { padding: .5rem .6rem; border-bottom: 1px solid var(--grid); vertical-align: top; }
+.tbl tr:hover td { background: var(--surface-2); }
+.tbl .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.chip { display: inline-flex; align-items: center; gap: .35rem; border-radius: 999px; padding: .15rem .55rem; font-size: .7rem; font-weight: 650; white-space: nowrap; border: 1px solid var(--border); background: var(--surface-2); color: var(--ink-2); }
+.dot { width: .6rem; height: .6rem; border-radius: 999px; display: inline-block; flex: none; }
+.map-path { stroke: var(--surface); stroke-width: .5; transition: opacity .15s; }
+.map-path.pilot { cursor: pointer; }
+.map-path.pilot:hover { stroke: var(--ink); stroke-width: 1.2; }
+.map-path.sel { stroke: var(--ink); stroke-width: 1.8; }
+.recharts-cartesian-grid line { stroke: var(--grid); }
+.recharts-text { fill: var(--muted); font-size: 11px; }
+.recharts-tooltip-wrapper { outline: none; }
+.tip { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: .55rem .7rem; font-size: .78rem; box-shadow: 0 6px 20px rgba(0,0,0,.12); color: var(--ink); }
+@keyframes pulse { 50% { opacity: .5 } }
+.skeleton { animation: pulse 1.4s ease-in-out infinite; background: var(--surface-2); border-radius: 12px; }
+}
+@media print { aside, .no-print { display: none !important; } }

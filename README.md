@@ -1,84 +1,114 @@
-# SkillSight — Labour Market Intelligence
+# SkillSight: AI-enabled Labour Market Intelligence System
 
-SkillSight is a local-first decision-support prototype for exploring labour demand and training indicators, reviewing transparent forecasts and alerts, and testing constrained seat allocations. Firebase authentication is optional for the local synthetic-data demo and becomes required when `FIREBASE_PROJECT_ID` is configured on the backend.
+**Smart India Hackathon 2026 · PS 26246 · Ministry of Skill Development & Entrepreneurship**
 
-**Demo data warning:** The included records are deterministic synthetic demonstration data, not official government statistics and not connected to MSDE, NCS, PLFS, e-Shram, or any live vacancy feed. The current schema has demand observations and training capacity only; it does not contain comparable workforce supply, placements, or certifications. Therefore the application does not claim a measured shortage/oversupply or workforce gap.
+SkillSight fuses fragmented labour-market signals into one demand index and forecasts it 18 months ahead, with calibrated uncertainty. It then compares that forecast with migration-aware training supply for every district and trade. Beyond measuring gaps, it tells planners what to do next:
+- next-cycle seat targets
+- bridge courses that move surplus trainees into shortage trades
+- curriculum revisions
+- where to add training capacity
+- an auto-drafted District Skill Development Plan
 
-## Stack and structure
+The system is multilingual and accessible, and has an API.
 
-- Python 3.11+, FastAPI, Pydantic, SQLite, pandas, NumPy
-- React 19, Vite 8, Tailwind CSS 4 frontend; FastAPI backend
-- CSV import with validation and transaction rollback; JSON API and CSV exports
-- SQLite stores source provenance, observations, and saved scenarios
+> **Demo data warning.** The bundled data is a deterministic *synthetic* universe shaped like NCS, EPFO, job-portal, e-Shram, PLFS and Skill India records, covering 4 states, 170 real districts, 24 trades and 36 months. It is not official statistics and is not connected to any government system. Because the simulation has a known ground truth, the methods are validated against it.
 
-`backend/` holds API, schema, analytics and seed data. `frontend/src/` holds React views; Vite builds the Tailwind CSS application to `frontend/dist/`. `docs/` documents data definitions, methods, architecture, and team interfaces.
+## What it does (problem-statement mapping)
+
+| Expected outcome | SkillSight |
+|---|---|
+| Aggregate and normalise demand signals | LGD geo harmonisation, AI NCO-2015 auto-coder (TF-IDF + Gemini fallback), MinHash de-duplication with ghost-posting detection, benchmark calibration, and a **Unified Labour Demand Index** with self-learning source weights (triple collocation) |
+| Cross-reference training capacity | Centre × QP × cycle seats, completion, certification, placement and wages, with **migration-aware** supply (out-flows and in-flows between districts) and absorbable e-Shram job-seekers |
+| Forward-looking gap forecasts, updated periodically | Ensemble forecast (seasonal growth + damped Holt + global gradient boosting with an **announced-investment leading indicator**), conformal P10–P90 bands, hierarchical reconciliation, and refreshes every 24 h or on demand |
+| Rank trades and geographies by severity | Five gap classes, a 0–100 severity score (magnitude, persistence, acceleration, wage signal, trust), and rankings by state, district, trade and sector |
+| Early-warning flags | **Probabilistic** flags with the quarter they are expected in and driver attribution, plus an acknowledge/assign workflow, WhatsApp/email/SMS digests and webhooks |
+| Interactive dashboard, national → district | Choropleth of India's 726 districts with drill-down from all pilot states to one state to one district, trade explorer, fan charts and a forecast accountability ledger |
+| API and export layer | Versioned REST API with OpenAPI docs, read-only API keys, CSV/XLSX/JSON exports, and an **XLSX scheme target sheet** |
+| Multilingual, accessible | English, हिन्दी, ಕನ್ನಡ, मराठी, ଓଡ଼ିଆ; light/dark/high-contrast themes; text size; keyboard navigation; table view for every chart; read-aloud; colour-independent status glyphs |
+
+### Distinctive features
+1. **Next-cycle Target Planner.** A MILP (HiGHS) sets integer seats for every district × trade. It minimises shortage and excess within budget, centre capacity and change limits, keeps the women-friendly seat share, and never cuts seats in aspirational districts. Odisha solves in about 0.3 s.
+2. **Investment what-if simulator.** Describe a project (for example, a 2 GW solar park in Kalahandi). The model is re-run with it and shows which trades tip into shortage, how many extra seats are needed and what they cost, before hiring starts.
+3. **Pivot Pathways.** Bridge courses from oversupplied trades to adjacent shortage trades, based on QP skill overlap (for example, Data Entry → AI Data Annotation, Electrician → Solar PV). They could redirect about 95,000 surplus candidates.
+4. **Curriculum Drift Radar.** Skills in job posts are compared with each NSQF QP to give a freshness score, missing skills and stale modules. Example: *EV Battery QP is 42% fresh; add thermal management, high-voltage safety and OBD/CAN diagnostics.*
+5. **Migration & capacity.** Corridor flows (for example, Ganjam → Bengaluru) and centre siting: where to sanction new capacity versus repurpose surplus seats.
+6. **Disha copilot.** Ask in any of the five languages. Gemini function calling answers from the computed tables, with an offline engine when no API key is set.
+7. **District Skill Development Plan.** One click produces a print-ready plan per district, with a narrative grounded in computed figures, in any of the five languages.
+8. **Trust built in.** A data-trust score per cell widens forecast intervals. The validation metrics and the accountability ledger are shown in the product itself.
+
+### Validation (latest run)
+
+| Check | Result |
+|---|---|
+| Demand index error vs. ground truth | **10.5%** monthly / 7.7% quarterly (best single source 13.8%) |
+| Forecast hold-out WAPE | **12.5%** (prototype linear trend 16.3%) |
+| P10–P90 interval coverage | ~74% (nominal 80%) |
+| Reconciliation incoherence | 0 |
+| NCO auto-coding accuracy | 98.5% on held-out postings (96% auto-coded, the rest sent to review) |
+| Duplicate postings removed | ~25% |
+
+## Stack
+- **Backend:** Python 3.11+, FastAPI, SQLite, NumPy/pandas, scikit-learn, SciPy (HiGHS MILP), rapidfuzz, openpyxl, Google Gen AI SDK (Gemini)
+- **Frontend:** React 19, Vite 8, Tailwind CSS 4, Recharts, d3-geo, react-i18next
+- **Auth:** optional Firebase sign-in; API keys for machine clients
+
+See `docs/ARCHITECTURE.md`, `docs/METHODOLOGY.md` (all formulas) and `docs/DATA_DICTIONARY.md`.
 
 ## Run locally
 
-In PowerShell:
-
-```powershell
-py -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
+```bash
+python3 -m venv .venv && source .venv/bin/activate        # Windows: py -m venv .venv; .\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+cd frontend && npm install && npm run dev:full            # API on :8000, UI on :5173
 ```
 
-Install frontend packages once:
+Open http://127.0.0.1:5173.
+- **First start:** generates the synthetic database (~5 s) and runs the full pipeline (~25 s).
+- **Later starts:** serve stored results immediately and warm the model in the background.
+- **Production build:** run `npm run build`; FastAPI then serves the UI at http://127.0.0.1:8000. API docs are at `/docs`.
 
-```powershell
-cd frontend
-npm install
+Optional environment variables:
+
+| Variable | Purpose |
+|---|---|
+| `GEMINI_API_KEY` | Google Gemini key (from Google AI Studio). Enables Gemini for the copilot, DSDP narratives and hard NCO titles (default model `gemini-2.5-flash`; override with `SKILLSIGHT_GEMINI_MODEL`). Without it, everything works offline. `GOOGLE_API_KEY` is also accepted. |
+| `SKILLSIGHT_REFRESH_HOURS` | Scheduled refresh interval (default 24; 0 disables) |
+| `SKILLSIGHT_DB` | Database path (default `data/skillsight.db`) |
+| `FIREBASE_PROJECT_ID` + `frontend/.env.local` `VITE_FIREBASE_*` | Turn on sign-in. Grant planner rights with `python -m backend.set_firebase_role <UID> planner`. |
+
+To regenerate the demo data, run `python -m backend.synth.generate --reset`. It refuses if imported (non-synthetic) sources exist; delete `data/skillsight.db` in that case.
+
+## Tests
+
+```bash
+python -m pytest -q          # 14 tests, ~50 s
+cd frontend && npm run build
 ```
 
-Start both services together from `frontend`:
+The tests cover:
+- generator determinism and reset safety
+- the fused index beating every single source
+- the ensemble beating the legacy baseline
+- hierarchy coherence and interval coverage
+- detection of the planted storylines (Pune EV-battery shortage, data-entry saturation, the Koraput hospital early warning)
+- MILP constraints (budget, change limits, women share, aspirational districts, infeasibility)
+- XLSX target sheet, what-if, pathways, curriculum, siting
+- alert workflow, offline copilot, Gemini function-calling loop (mocked), NCO classifier
+- import harmonisation, exports, Hindi DSDP, API keys
 
-```powershell
-npm run dev:full
-```
+## 7-minute demo script
+1. **Command centre.** The KPIs show 31 lakh forecast openings against 36 lakh supply, but 6 lakh unmet: the problem is mismatch, not volume. On the map, red marks shortage and blue marks surplus. Point out the early-warning feed with Koraput health trades flagged about 3 quarters ahead of the new medical college.
+2. **Geo drill-down.** Go from all pilot states to Odisha to Ganjam. Construction is oversupplied locally, but 15% of certified masons migrate to Khordha, Bengaluru and Mumbai. Open a trade to see its drivers and quarterly outlook, then open the **DSDP** in Hindi.
+3. **Trade explorer.** EV Battery Technician: show the fan chart and the orange accountability line (last year's forecast against what happened), the backtest table, and the curriculum radar (*QP 42% fresh*).
+4. **What-if.** "2 GW solar park in Kalahandi" yields 3 new shortages, 4,465 extra seats and ₹6.3 cr, months before hiring begins.
+5. **Target planner.** Odisha: 60% of unmet demand closed and 73% of excess removed at about ₹24 cr less spend, with women's share and aspirational districts protected. Download the XLSX target sheet.
+6. **Skills.** Pivot pathways (Data Entry → AI Data Annotation, 130-hour bridge), then curriculum freshness.
+7. **Disha.** Ask "ओडिशा में किन ट्रेडों में कमी है?", then switch the UI to Odia or Kannada, turn on high contrast and use read-aloud.
+8. **Data hub / Methodology.** Source fusion weights, NCO auto-coder playground, CSV import with harmonisation (Bangalore → Bengaluru Urban), and the validation table.
 
-The script starts FastAPI on port 8000 and Vite on port 5173. Open http://127.0.0.1:5173. It uses the project `.venv` Python when present, or `python` on `PATH`. To run the services separately, start `python -m uvicorn backend.app:app --reload` from the repository root, then `npm run dev` from `frontend`.
-
-Vite proxies API requests to FastAPI. To serve the production frontend through FastAPI, run `npm run build` from `frontend`, then start/restart the API and open http://127.0.0.1:8000. API docs are at `/docs`; health is at `/api/health`. The app initializes SQLite and seeds the bundled demo records on first API start; its database path defaults to `data/skillsight.db` and can be set with `SKILLSIGHT_DB`.
-
-## Firebase authentication
-
-The supplied Firebase web app settings are stored locally in the ignored file `frontend/.env.local`. The Firebase Web API key is client configuration, not a password or service-account secret. Analytics is not initialized because it is not needed for authentication.
-
-1. In Firebase Console, enable **Authentication ? Email/Password**. Confirm `localhost` and `127.0.0.1` are in Authentication's authorized domains, then create a test user. Public self-registration is not offered.
-2. From the repository root, set the backend project ID and run both services:
-
-   ```powershell
-   $env:FIREBASE_PROJECT_ID = "skillsight-4486e"
-   cd frontend
-   npm run dev:full
-   ```
-
-   Open http://127.0.0.1:5173 and sign in. The backend checks ID token signatures against Google's public signing certificates and validates the configured Firebase project. It does not need a service-account file for login. `/api/health` remains public. Import and scenario-save operations require the Firebase custom claim `role` to be `planner` or `admin`; other signed-in accounts can use read-only features.
-3. To grant planner access, provision a Firebase Admin SDK credential separately (Application Default Credentials or a protected service-account file), then assign a role by UID with `python -m backend.set_firebase_role USER_UID planner` (or `admin`). Never commit that credential. Have the user sign out and back in after a claim change.
-
-Restrict the Firebase Web API key to the Firebase APIs in Google Cloud. The optional Admin SDK credential is sensitive and must stay outside the repository.
-
-## CSV import
-
-Upload UTF-8 CSV through **Data & quality**. Required columns: `period` (YYYY-MM), `state`, `district`, `sector`, `occupation_code`, `occupation_title`, `demand_count`, `training_seats`. Optional CSV column: `quality_note`. Source label, type, and access method are captured in the import form. Counts must be nonnegative integers. Every import records its source and ingest timestamp and is committed atomically. Unknown occupation codes are retained as supplied; no fabricated NCO mapping is applied. Files are limited to 5 MiB. No worker-level data is requested.
-
-## Tests and verification
-
-```powershell
-python -m pytest tests -q -p no:cacheprovider
-```
-
-The backend tests cover deterministic seed/aggregation, input validation, forecast horizon and reproducibility, constrained allocation feasibility, infeasibility, Firebase middleware behavior, and API workflows. Verify the frontend production bundle with `cd frontend; npm run build`.
-
-## Judging walkthrough
-
-1. Review observed demand totals and training seats on Overview; check the synthetic-data banner.
-2. Filter by state/sector, then open Occupations or Geography to inspect supported details.
-3. Review the deterministic trend baseline and evidence-backed threshold alerts in Forecasts & alerts.
-4. In Allocation, set budget and district capacity and calculate a feasible allocation; inspect constraints and save it.
-5. Reload saved scenarios and download observation or scenario CSV from Reports.
-6. Import a small CSV in Data & quality to demonstrate validation, provenance and refreshed results.
-
-## Known limits
-
-This is a prototype, not a certified or connected government system. Its map view is a geographic comparison table because no boundary dataset was supplied. Forecasts are linear-trend baselines with no accuracy score or confidence interval; short histories are marked insufficient. The allocator optimizes coverage of recorded demand proxy under user-entered cost/capacity, not real job placements or policy impact. Firebase authentication is available when configured, but production identity governance, audit approval workflows, Excel import, and production deployment are not implemented. Scenario saves are local prototype records and should receive human review.
+## Limits
+- The data is synthetic. NCO/QP mappings are illustrative and must be verified against official registers.
+- Supply assumes in-cycle certification and a stable migration matrix.
+- Investment staffing shares are sector-level assumptions.
+- SQLite is the evaluation store; production would use PostgreSQL/PostGIS and data-sharing connectors.
+- All recommendations need planner review.

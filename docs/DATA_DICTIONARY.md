@@ -1,14 +1,48 @@
 # Data dictionary
 
-| Field | Meaning | Unit / rule |
-|---|---|---|
-| `period` | Reporting month supplied for observation | `YYYY-MM` |
-| `state`, `district` | Geographic labels supplied by source | Text; district boundary not implied |
-| `sector` | Sector label supplied by source | Text |
-| `occupation_code`, `occupation_title` | Source classification identifier and title | Text; demo codes are not NCO mappings |
-| `demand_count` | Source demand indicator | Nonnegative integer; source-specific proxy, not universally comparable |
-| `training_seats` | Source training capacity indicator | Nonnegative integer; latest period used for snapshot |
-| `quality_note` | Caveat attached to observation | Text |
-| `source_id` | Provenance link | Foreign key to source registry |
+All tables are defined in `backend/schema.sql`. Bundled rows are synthetic (`sources.is_synthetic = 1`).
 
-Source registry fields: `name`, `source_type` (`synthetic_demo` or `imported`), `access_method`, `is_synthetic`, `imported_at`, `reporting_note`. Imported records do not establish a government source unless uploader provenance does so. Missing workforce supply, completions, certifications, placements, skills, qualifications, cost schedules, and NCO mappings are unavailable rather than inferred.
+## Reference
+
+| Table | Key fields | Notes |
+|---|---|---|
+| `districts` | `lgd`, `state`, `district`, `lat`, `lon`, `urban`, `pop_weight`, `aspirational` | 170 pilot districts; codes from Census 2011 boundary data; aspirational = NITI Aayog list |
+| `trades` | `code` (NCO-2015), `title`, `sector`, `qp_code`, `nsqf_level`, `hours`, `cost_per_seat` (₹), `women_share`, `entry_wage` (₹/month), `emerging` | Codes are illustrative pilot mappings |
+| `qp_skills` | `trade_code`, `skill` | Skills listed in the current QP |
+
+## Sources and raw data
+
+| Table | Key fields | Notes |
+|---|---|---|
+| `sources` | `key`, `name`, `source_type`, `access_method`, `grain`, `lag_months`, `side`, `is_synthetic` | Provenance registry; imports get `key = import-<id>` |
+| `signals` | `source_id`, `period` (YYYY-MM), `lgd`, `sector`, `trade_code` ('' when sector-level), `value` | Aggregate counts |
+| `benchmarks` | `state`, `sector`, `fy`, `hires` | Annual anchor for coverage |
+| `plfs` | `state`, `quarter`, `youth_ur`, `lfpr` | Context |
+| `postings` | `portal`, `posted_on`, `lgd`, `employer`, `raw_title`, `description`, `salary`, `gold_code`, `nco_code`, `nco_conf`, `coder`, `cluster_id`, `ghost` | `eval_code` holds simulation truth for evaluation only |
+| `investments` | `name`, `lgd`, `sector`, `capex_cr`, `jobs_ops`, `jobs_build`, `announced`, `build_start`, `ops_start`, `ramp_months` | Leading indicator |
+| `centres` | `lgd`, `name`, `scheme`, `capacity`, `lat`, `lon` | Training centres |
+| `supply` | `centre_id`, `trade_code`, `fy`, `seats`, `enrolled`, `completed`, `certified`, `placed`, `avg_wage`, `women` | FY 2026-27 is in progress (no completions yet) |
+| `migration` | `origin_lgd`, `dest_lgd`, `sector`, `share` | Share of certified workers who move |
+| `synthetic_truth` | `period`, `lgd`, `trade_code`, `openings` | Simulation ground truth; used only to validate |
+
+## Pipeline outputs
+
+| Table | Meaning |
+|---|---|
+| `uldi` | Fused openings estimate, demand index (base Oct 2023–Sep 2024 = 100), sources present, cell trust |
+| `source_weights` | Learned weight, structural error variance and coverage per sector × source |
+| `forecasts` | `node` (LGD code, `ST:<state>` or `IN`) × trade × month: P10 / P50 / P90 and investment uplift |
+| `backtests` | WAPE and ensemble weight per trade × model |
+| `ledger` | Past forecasts vs. later measured index at state / national level |
+| `gaps` | Per district × trade, next 12 months: demand P10/P50/P90; supply components (local certified, outflow, inflow, seekers); gap, gap ratio, status, severity; P(shortage), P(surplus), lead quarter, trust; persistence, wage growth, placement rate; drivers, quarterly outlook and history (JSON) |
+| `alerts` | Early-warning flags with workflow status (`open`, `acknowledged`, `assigned`, `actioned`, `dismissed`) |
+| `pipeline_runs` | Run log with full validation summary JSON |
+| `scenarios` | Saved optimiser runs (inputs + result) |
+| `api_keys`, `webhooks` | Integration access |
+
+## Units and conventions
+
+* Demand is **openings per month** at district × trade level; forecasts are monthly; gaps cover 12 months.
+* Gap ratio = (supply − demand) / demand. Negative means shortage.
+* Indian digit grouping in the UI (lakh = 1,00,000; crore = 1,00,00,000).
+* Fiscal year runs April–March (`2026-27`).
