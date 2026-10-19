@@ -64,8 +64,8 @@ def test_hierarchy_is_coherent(client):
 def test_planted_storylines_are_detected(client):
  # data entry saturation is widespread; EV battery technicians are short in Pune; Koraput hospital raises an early warning
  deo=client.get('/api/v1/rankings',params={'by':'trade','order':'surplus','limit':3}).json()
- assert 'Data Entry Operator' in [r['title'] for r in deo]
- pune=client.get('/api/v1/gaps',params={'lgd':'521','trade':'7231.0501'}).json()[0]
+ assert 'Domestic Data Entry Operator' in [r['title'] for r in deo]
+ pune=client.get('/api/v1/gaps',params={'lgd':'521','trade':'8212.0300'}).json()[0]
  assert pune['status'] in ('Acute shortage','Shortage') and pune['p_shortage']>0.8
  kor=client.get('/api/v1/alerts',params={'lgd':'398','kind':'emerging_shortage'}).json()
  assert any(a['trade']=='General Duty Assistant' for a in kor)
@@ -107,7 +107,7 @@ def test_pathways_curriculum_siting(client):
  p=client.get('/api/v1/pathways').json()
  assert p['total_absorbable']>0 and all(x['skill_overlap']>=0.25 for x in p['pathways'])
  cur=client.get('/api/v1/curriculum').json()
- ev=next(x for x in cur if x['trade_code']=='7231.0501')
+ ev=next(x for x in cur if x['trade_code']=='8212.0300')
  assert ev['missing_skills'] and ev['freshness_score']<75
  assert client.get('/api/v1/siting',params={'limit':5}).json()[0]['priority_score']>0
 
@@ -123,12 +123,12 @@ def test_copilot_offline_answers_with_data(client):
  r=client.post('/api/v1/copilot/chat',json={'message':'Where are the biggest shortages in Odisha?'}).json()
  assert r['mode']=='offline' and 'Odisha' in r['answer'] and r['data']['rows']
  r=client.post('/api/v1/copilot/chat',json={'message':'forecast for EV battery technician in Pune'}).json()
- assert 'EV Battery Technician' in r['answer']
+ assert 'EV Battery System Repair Technician' in r['answer']
 
 
 def test_nco_classifier_and_import_harmonisation(client):
  r=client.post('/api/v1/nco/classify',json={'titles':['solar mistri','ward boy hospital','Helper']}).json()['results']
- assert r[0]['code']=='7411.0101' and r[1]['code']=='5321.0100' and r[2]['needs_review']
+ assert r[0]['code']=='7421.1401' and r[1]['code']=='5329.0101' and r[2]['needs_review']
  good='period,state,district,occupation,value\n2026-09,Karnataka,Bangalore,Solar technician,40\n'
  res=client.post('/api/v1/import',files={'file':('a.csv',good,'text/csv')}).json()
  assert res['rows_imported']==1 and res['harmonisation'][0]['district']=='Bengaluru Urban'
@@ -164,3 +164,12 @@ def test_gemini_copilot_function_calling_loop(client,monkeypatch):
  monkeypatch.setattr(llm,'available',lambda:True);monkeypatch.setattr(llm,'_generate',fake_generate)
  r=client.post('/api/v1/copilot/chat',json={'message':'shortages in Odisha?'}).json()
  assert r['mode']=='gemini' and r['tools'][0]['name']=='query_gaps' and r['data']['rows'] and len(calls)==2
+
+
+def test_trade_codes_carry_provenance(client):
+ trades=client.get('/api/v1/reference').json()['trades']
+ assert len(trades)==24 and all(t['source_url'].startswith('http') and t['nco_status'] and t['qp_status'] for t in trades)
+ assert all(t['nco_code']==t['code'] for t in trades if t['nco_code'])                      # verified NCO codes are the trade key
+ assert all(t['code'].startswith('LMIS-') for t in trades if not t['nco_code'])            # unverified roles use internal ids
+ official=client.get('/api/v1/official').json()
+ assert official['epfo'] and official['plfs'] and all(r['url'].startswith('https://') for r in official['epfo']+official['plfs'])

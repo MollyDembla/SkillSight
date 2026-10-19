@@ -7,7 +7,7 @@ pipeline never reads the truth table; it exists only to validate the methods.
 from __future__ import annotations
 import argparse
 import numpy as np
-from .. import catalog
+from .. import catalog, official
 from ..db import PERIODS, CURRENT_FY, COMPLETED_FYS, add_months, connect, fiscal_year, month_index
 
 SEED = 2026
@@ -21,7 +21,6 @@ SOURCES = [
     ("eshram", "e-Shram registered job-seekers", "administrative", "Simulated e-Shram extract", "district x NCO x month", 1, "supply"),
     ("postings", "Raw job postings sample (text)", "job_portal", "Simulated portal scrape (12 months)", "posting", 0, "demand"),
     ("sidh", "Skill India Digital Hub training records", "administrative", "Simulated SIDH cycle extract", "centre x QP x FY", 0, "supply"),
-    ("plfs", "Periodic Labour Force Survey", "survey", "Simulated PLFS quarterly bulletin", "state x quarter", 3, "context"),
     ("benchmark", "Annual establishment hiring benchmark", "survey", "Simulated annual benchmark", "state x sector x FY", 6, "anchor"),
     ("invest", "Investment project pipeline", "industry", "Simulated Invest-India style tracker", "project", 0, "demand"),
 ]
@@ -57,6 +56,30 @@ def month_matrix_investments(districts, trades, idx_of):
     return out
 
 
+def anchor_to_official(level, districts, trades) -> dict | None:
+    """Rescale each state so the simulated EPFO (formal-hiring) state shares equal the official EPFO net-payroll shares.
+
+    The multiplier acts with strength = the sector's formal share, so formal trades follow official EPFO while
+    largely informal trades (construction) keep their population-driven size. Iterated to convergence; only
+    relative state sizes are anchored - absolute volumes stay synthetic because official EPFO covers all industries.
+    """
+    shares = official.state_shares("net_payroll_latest")
+    if not shares:
+        return None
+    states = np.array([d["state"] for d in districts])
+    formal = np.array([FORMAL_SHARE[t["sector"]] for t in trades])
+    before = None
+    for _ in range(25):
+        formal_hires = {st: float((level[states == st] * formal[None, :]).sum()) for st in shares}
+        total = sum(formal_hires.values())
+        sim = {st: v / total for st, v in formal_hires.items()}
+        before = before or sim
+        for st in shares:
+            level[states == st] *= (shares[st] / sim[st]) ** formal[None, :]
+    return {"official_epfo_share": {k: round(v, 4) for k, v in shares.items()}, "simulated_share_before": {k: round(v, 4) for k, v in before.items()},
+            "simulated_share_after": {k: round(v, 4) for k, v in sim.items()}}
+
+
 def generate(c, rng):
     districts = catalog.load_districts()
     trades = catalog.trades()
@@ -78,6 +101,7 @@ def generate(c, rng):
             cluster[idx_of[dname], j] = mult.get(t["sector"], 1.0)
     urban_factor = np.exp(np.outer(urban - 0.4, affinity) * 2.2)
     level = base[None, :] * popw[:, None] * urban_factor * cluster * np.exp(rng.normal(0, 0.12, (nd, nt)))
+    anchor = anchor_to_official(level, districts, trades)
     g = growth[None, :] + rng.normal(0, 0.04, (nd, nt))
     season = np.array([catalog.SEASONS[t["season"]] for t in trades])[:, months - 1]  # (nt, nm)
     trend = (1 + g[:, :, None]) ** (np.arange(nm)[None, None, :] / 12)
@@ -89,7 +113,9 @@ def generate(c, rng):
 
     # ---------- reference tables ----------
     c.executemany("INSERT INTO districts VALUES(?,?,?,?,?,?,?,?)", [(d["lgd"], d["state"], d["district"], d["lat"], d["lon"], d["urban"], round(float(popw[i]), 3), d["aspirational"]) for i, d in enumerate(districts)])
-    c.executemany("INSERT INTO trades VALUES(?,?,?,?,?,?,?,?,?,?,?)", [(t["code"], t["title"], t["sector"], catalog.SECTORS[t["sector"]], t["qp_code"], t["nsqf_level"], t["hours"], t["cost_per_seat"], t["women_share"], t["entry_wage"], t["emerging"]) for t in trades])
+    V = catalog.VERIFICATION
+    c.executemany("INSERT INTO trades VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", [(t["code"], t["title"], t["sector"], catalog.SECTORS[t["sector"]], t["qp_code"], t["nsqf_level"], t["hours"], t["cost_per_seat"], t["women_share"], t["entry_wage"], t["emerging"],
+                                                                                 V[t["code"]]["nco"], V[t["code"]]["nco_status"], V[t["code"]]["qp_status"], V[t["code"]]["qp_title"], V[t["code"]]["source"], V[t["code"]]["note"]) for t in trades])
     c.executemany("INSERT INTO qp_skills VALUES(?,?)", [(code, s) for code, (qp, _) in catalog.SKILLS.items() for s in qp])
     sid = {}
     for key, name, stype, access, grain, lag, side in SOURCES:
@@ -152,13 +178,6 @@ def generate(c, rng):
                 v = truth[np.ix_(st_idx[s], cols, mm)].sum() * float(np.exp(rng.normal(0, 0.03)))
                 bench.append((s, sec, fy, round(v)))
     c.executemany("INSERT INTO benchmarks VALUES(?,?,?,?)", bench)
-    base_ur = {"Karnataka": 0.118, "Maharashtra": 0.112, "Odisha": 0.168, "Uttar Pradesh": 0.142}
-    plfs = []
-    for q in range(12):
-        y, qq = 2023 + (q + 3) // 4, (q + 3) % 4 + 1
-        for s in states:
-            plfs.append((s, f"{y}-Q{qq}", round(base_ur[s] - 0.0018 * q + rng.normal(0, 0.003), 4), round(0.56 + 0.002 * q + rng.normal(0, 0.004), 4)))
-    c.executemany("INSERT INTO plfs VALUES(?,?,?,?)", plfs)
 
     # ---------- supply side: centres and training cycles ----------
     schemes = ["PMKVY 4.0", "ITI", "JSS", "PMKK", "DDU-GKY", "State Skill Mission"]
@@ -243,7 +262,7 @@ def generate(c, rng):
 
     # ---------- raw postings sample (text) ----------
     generate_postings(c, rng, districts, trades, truth, cov_portal)
-    return {"districts": nd, "trades": nt, "months": nm, "signals": len(sig), "centres": len(centres), "supply_rows": len(sup)}
+    return {"districts": nd, "trades": nt, "months": nm, "signals": len(sig), "centres": len(centres), "supply_rows": len(sup), "official_anchor": anchor}
 
 
 def generate_postings(c, rng, districts, trades, truth, cov_portal):
@@ -311,16 +330,19 @@ def seed(reset: bool = False) -> dict | None:
     c = connect()
     try:
         if reset:
-            non_synthetic = c.execute("SELECT COUNT(*) FROM sources WHERE is_synthetic=0").fetchone()[0]
+            non_synthetic = c.execute("SELECT COUNT(*) FROM sources WHERE source_type='imported'").fetchone()[0]
             if non_synthetic:
                 raise RuntimeError("Refusing reset: database contains non-demo sources.")
             for table in ["alerts", "gaps", "backtests", "forecasts", "source_weights", "uldi", "pipeline_runs", "scenarios", "synthetic_truth", "migration", "supply", "centres",
-                          "investments", "postings", "plfs", "benchmarks", "signals", "sources", "qp_skills", "trades", "districts"]:
+                          "investments", "postings", "plfs", "official_stats", "benchmarks", "signals", "sources", "qp_skills", "trades", "districts"]:
                 c.execute(f"DELETE FROM {table}")
             c.commit()
         if c.execute("SELECT COUNT(*) FROM districts").fetchone()[0]:
+            official.load(c)  # pick up any update to the official statistics file
+            c.commit()
             return None
         summary = generate(c, np.random.default_rng(SEED))
+        summary["official_rows"] = official.load(c)
         c.commit()
         return summary
     finally:

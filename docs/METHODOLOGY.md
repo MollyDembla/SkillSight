@@ -2,7 +2,12 @@
 
 SkillSight turns fragmented labour-market signals into one demand index, forecasts it, compares it with migration-aware training supply, and converts the gap into decisions. All steps run in `backend/pipeline/run.py` on startup, on demand and on a schedule (`SKILLSIGHT_REFRESH_HOURS`, default 24 h).
 
-> **Data status.** The bundled data is a deterministic synthetic universe (`backend/synth/generate.py`) shaped like the real sources: 4 states, 170 real districts (Census/LGD codes), 24 trades with NCO-2015 and NSQF QP codes (illustrative mappings), 36 months (Oct 2023 – Sep 2026). Because the simulation has a known ground truth, the methods can be validated against it — something real data never allows.
+> **Data status.** District × trade × month detail is a deterministic synthetic universe (`backend/synth/generate.py`) shaped like the real sources: 4 states, 170 real districts (Census/LGD codes), 24 trades, 36 months (Oct 2023 – Sep 2026). It is tied to real data in three ways:
+> 1. **Trade codes** are checked against the National Qualifications Register and Sector Skill Council QP lists. Each trade records its NCO and QP verification status and source.
+> 2. **State sizes are anchored to official EPFO net-payroll shares.** The generator rescales each state so its simulated formal hiring matches EPFO's official shares, weighted by each sector's formal share.
+> 3. **Official EPFO and PLFS figures** (`backend/data/official_stats.csv`, one source URL per value) are shown alongside the index.
+>
+> Because the simulation has a known ground truth, the methods can be validated against it — something real data never allows. The state-share comparison agrees by construction and is *not* a validation.
 
 ## 1. Sources and harmonisation
 
@@ -46,10 +51,10 @@ For source *s*, district *d*, trade *t*, month *m*:
 
 | Estimate | Monthly error (WAPE) |
 |---|---|
-| ULDI (fused) | 10.5% (7.7% quarterly) |
-| Portal only | 14.5% |
-| EPFO only | 13.8% |
-| NCS only | 25.2% |
+| ULDI (fused) | 10.8% (8.2% quarterly) |
+| Portal only | 14.1% |
+| EPFO only | 14.2% |
+| NCS only | 23.9% |
 
 The fused index beats every individual source; this is enforced by a test.
 
@@ -68,9 +73,9 @@ Every district × trade series (4,080) is forecast for 18 months by three member
 
 **Ensemble weights** are chosen per trade on the 3-member simplex (0.1 grid), minimising absolute error across rolling-origin backtests at Mar 2025, Sep 2025 and Mar 2026.
 
-**Hold-out check:** weights fitted on the earlier origins and scored on Mar 2026 give 12.5% WAPE for the ensemble, against 16.3% for the prototype's original straight-line trend.
+**Hold-out check:** weights fitted on the earlier origins and scored on Mar 2026 give 13.3% WAPE for the ensemble, against 16.2% for the prototype's original straight-line trend.
 
-**Prediction intervals** use split conformal prediction: P10/P90 multipliers are the 10th/90th quantiles of actual ÷ forecast per sector × horizon bucket (1–3, 4–6, 7–12 months; √-time widening beyond 12). They are widened by `1 + 0.5·(1 − trust)`. Empirical coverage on a held-out origin is about 74% against a nominal 80%, and is reported on every run.
+**Prediction intervals** use split conformal prediction: P10/P90 multipliers are the 10th/90th quantiles of actual ÷ forecast per sector × horizon bucket (1–3, 4–6, 7–12 months; √-time widening beyond 12). They are widened by `1 + 0.5·(1 − trust)`. Empirical coverage on a held-out origin is about 73% against a nominal 80%, and is reported on every run.
 
 **Hierarchical reconciliation.** State and national forecasts come from damped Holt on the aggregated series plus summed uplift. They are combined with the district forecasts by weighted least squares (MinT-diagonal, W = forecast scale):
 

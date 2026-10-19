@@ -29,8 +29,8 @@ The system is multilingual and accessible, and has an API.
 ### Distinctive features
 1. **Next-cycle Target Planner.** A MILP (HiGHS) sets integer seats for every district × trade. It minimises shortage and excess within budget, centre capacity and change limits, keeps the women-friendly seat share, and never cuts seats in aspirational districts. Odisha solves in about 0.3 s.
 2. **Investment what-if simulator.** Describe a project (for example, a 2 GW solar park in Kalahandi). The model is re-run with it and shows which trades tip into shortage, how many extra seats are needed and what they cost, before hiring starts.
-3. **Pivot Pathways.** Bridge courses from oversupplied trades to adjacent shortage trades, based on QP skill overlap (for example, Data Entry → AI Data Annotation, Electrician → Solar PV). They could redirect about 95,000 surplus candidates.
-4. **Curriculum Drift Radar.** Skills in job posts are compared with each NSQF QP to give a freshness score, missing skills and stale modules. Example: *EV Battery QP is 42% fresh; add thermal management, high-voltage safety and OBD/CAN diagnostics.*
+3. **Pivot Pathways.** Bridge courses from oversupplied trades to adjacent shortage trades, based on QP skill overlap (for example, Data Entry → Data Annotator, Electrician → Solar PV). They could redirect about 1.1 lakh.
+4. **Curriculum Drift Radar.** Skills in job posts are compared with each NSQF QP to give a freshness score, missing skills and stale modules. Example: *EV battery repair QP is 39% fresh; add thermal management, high-voltage safety and OBD/CAN diagnostics.*
 5. **Migration & capacity.** Corridor flows (for example, Ganjam → Bengaluru) and centre siting: where to sanction new capacity versus repurpose surplus seats.
 6. **Disha copilot.** Ask in any of the five languages. Gemini function calling answers from the computed tables, with an offline engine when no API key is set.
 7. **District Skill Development Plan.** One click produces a print-ready plan per district, with a narrative grounded in computed figures, in any of the five languages.
@@ -40,12 +40,12 @@ The system is multilingual and accessible, and has an API.
 
 | Check | Result |
 |---|---|
-| Demand index error vs. ground truth | **10.5%** monthly / 7.7% quarterly (best single source 13.8%) |
-| Forecast hold-out WAPE | **12.5%** (prototype linear trend 16.3%) |
-| P10–P90 interval coverage | ~74% (nominal 80%) |
+| Demand index error vs. ground truth | **10.8%** monthly / 8.2% quarterly (best single source 14.1%) |
+| Forecast hold-out WAPE | **13.3%** (prototype linear trend 16.2%) |
+| P10–P90 interval coverage | ~73% (nominal 80%) |
 | Reconciliation incoherence | 0 |
-| NCO auto-coding accuracy | 98.5% on held-out postings (96% auto-coded, the rest sent to review) |
-| Duplicate postings removed | ~25% |
+| NCO auto-coding accuracy | 98.2% on held-out postings (97% auto-coded, the rest sent to review) |
+| Duplicate postings removed | ~24% |
 
 ## Stack
 - **Backend:** Python 3.11+, FastAPI, SQLite, NumPy/pandas, scikit-learn, SciPy (HiGHS MILP), rapidfuzz, openpyxl, Google Gen AI SDK (Gemini)
@@ -97,17 +97,17 @@ The tests cover:
 - import harmonisation, exports, Hindi DSDP, API keys
 
 ## 7-minute demo script
-1. **Command centre.** The KPIs show 31 lakh forecast openings against 36 lakh supply, but 6 lakh unmet: the problem is mismatch, not volume. On the map, red marks shortage and blue marks surplus. Point out the early-warning feed with Koraput health trades flagged about 3 quarters ahead of the new medical college.
+1. **Command centre.** The KPIs show 30.6 lakh forecast openings against 34.1 lakh supply, but 6.4 lakh unmet: the problem is mismatch, not volume. On the map, red marks shortage and blue marks surplus. Point out the early-warning feed with Koraput health trades flagged about 3 quarters ahead of the new medical college.
 2. **Geo drill-down.** Go from all pilot states to Odisha to Ganjam. Construction is oversupplied locally, but 15% of certified masons migrate to Khordha, Bengaluru and Mumbai. Open a trade to see its drivers and quarterly outlook, then open the **DSDP** in Hindi.
-3. **Trade explorer.** EV Battery Technician: show the fan chart and the orange accountability line (last year's forecast against what happened), the backtest table, and the curriculum radar (*QP 42% fresh*).
-4. **What-if.** "2 GW solar park in Kalahandi" yields 3 new shortages, 4,465 extra seats and ₹6.3 cr, months before hiring begins.
-5. **Target planner.** Odisha: 60% of unmet demand closed and 73% of excess removed at about ₹24 cr less spend, with women's share and aspirational districts protected. Download the XLSX target sheet.
-6. **Skills.** Pivot pathways (Data Entry → AI Data Annotation, 130-hour bridge), then curriculum freshness.
+3. **Trade explorer.** EV Battery System Repair Technician: show the fan chart and the orange accountability line (last year's forecast against what happened), the backtest table, and the curriculum radar (*QP 42% fresh*).
+4. **What-if.** "2 GW solar park in Kalahandi" yields 4 new construction-trade shortages, 4,695 extra seats and ₹6.5 cr, months before hiring begins.
+5. **Target planner.** Odisha: 71% of unmet demand closed and 70% of excess removed at about ₹12 cr less spend, with women's share and aspirational districts protected. Download the XLSX target sheet.
+6. **Skills.** Pivot pathways (Data Entry → Data Annotator bridge), then curriculum freshness.
 7. **Disha.** Ask "ओडिशा में किन ट्रेडों में कमी है?", then switch the UI to Odia or Kannada, turn on high contrast and use read-aloud.
 8. **Data hub / Methodology.** Source fusion weights, NCO auto-coder playground, CSV import with harmonisation (Bangalore → Bengaluru Urban), and the validation table.
 
 ## Limits
-- The data is synthetic. NCO/QP mappings are illustrative and must be verified against official registers.
+- District × trade detail is synthetic; state sizes are anchored to official EPFO shares, and official EPFO/PLFS figures are shown alongside. Trade codes are verified against NQR where possible (a few roles have only a closest QP, or no NCO code; each is flagged in the app).
 - Supply assumes in-cycle certification and a stable migration matrix.
 - Investment staffing shares are sector-level assumptions.
 - SQLite is the evaluation store; production would use PostgreSQL/PostGIS and data-sharing connectors.

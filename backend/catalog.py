@@ -1,7 +1,8 @@
 """Static reference taxonomy: pilot geography, trades (NCO-2015 / NSQF QP), skills and staffing.
 
-NCO and QP codes are illustrative mappings chosen for the pilot; they must be verified against the
-official NCO-2015 and NQR registers before operational use.
+Trade codes were checked against the National Qualifications Register (nqr.gov.in) and Sector Skill Council QP
+lists; see VERIFICATION for the status and source of every code. Where NCO-2015 has no verified code for a role,
+the trade uses an internal "LMIS-" identifier and `nco_code` is empty.
 """
 from __future__ import annotations
 import json
@@ -59,35 +60,35 @@ CLUSTERS = {
     "Dharwad": {"EV": 1.3}, "Prayagraj": {"HC": 1.2}, "Jhansi": {"RE": 1.7}, "Mirzapur": {"RE": 1.4},
 }
 
-# Each trade: NCO-2015 code (illustrative), title, sector, NSQF QP, level, hours, cost/seat (INR),
+# Each trade: trade key (verified NCO-2015 code, else LMIS- id), title, sector, NSQF QP, level, hours, cost/seat (INR),
 # women share, base demand per pop unit, annual growth, supply ratio (certified supply / demand),
 # entry wage (INR/month), urban affinity, seasonality profile, emerging flag.
 TRADES = [
     # code, title, sector, qp, nsqf, hours, cost, women, base, growth, supply, wage, urban, season, emerging
-    ("7411.0101", "Solar PV Installer (Suryamitra)", "RE", "SGJ/Q0101", 4, 400, 18000, 0.08, 9, 0.24, 0.7, 15500, 0.2, "re", 1),
-    ("7412.0301", "Wind Turbine Technician", "RE", "SGJ/Q0301", 4, 480, 24000, 0.05, 3, 0.15, 0.6, 18000, 0.1, "re", 1),
-    ("3113.0102", "Rooftop Solar Grid Engineer", "RE", "SGJ/Q0102", 5, 520, 26000, 0.12, 4, 0.30, 0.65, 21000, 0.6, "re", 1),
-    ("3133.0400", "Green Hydrogen Plant Operator", "RE", "SGJ/Q1001", 5, 560, 32000, 0.10, 1.2, 0.55, 0.38, 24000, 0.3, "flat", 1),
-    ("7231.0501", "EV Battery Technician", "EV", "ASC/Q1405", 4, 450, 28000, 0.10, 5, 0.38, 0.5, 19000, 0.7, "flat", 1),
-    ("7231.0100", "Automotive Service Technician", "EV", "ASC/Q1411", 4, 420, 22000, 0.06, 11, 0.04, 1.05, 15000, 0.5, "flat", 0),
-    ("7231.0400", "Two-Wheeler Service Technician", "EV", "ASC/Q1416", 3, 360, 16000, 0.05, 13, 0.01, 1.35, 12500, 0.3, "flat", 0),
-    ("7421.0700", "Drone Service Technician", "EV", "ELE/Q7902", 4, 400, 30000, 0.14, 1.6, 0.42, 0.55, 20000, 0.6, "flat", 1),
-    ("5321.0100", "General Duty Assistant", "HC", "HSS/Q5101", 4, 420, 20000, 0.62, 14, 0.07, 1.1, 13500, 0.6, "flat", 0),
-    ("5322.0100", "Home Health Aide", "HC", "HSS/Q5102", 4, 360, 17000, 0.78, 8, 0.12, 0.9, 13000, 0.7, "flat", 0),
-    ("3212.0100", "Medical Lab Technician", "HC", "HSS/Q0301", 5, 600, 30000, 0.48, 5, 0.09, 0.8, 16500, 0.7, "flat", 0),
-    ("3258.0100", "Emergency Medical Technician", "HC", "HSS/Q2301", 4, 700, 34000, 0.30, 3, 0.11, 0.75, 17000, 0.5, "flat", 0),
-    ("4132.0100", "Data Entry Operator", "IT", "SSC/Q2212", 3, 300, 12000, 0.55, 10, -0.09, 2.4, 10500, 0.7, "flat", 0),
-    ("4222.0100", "Domestic BPO - CRM Voice", "IT", "SSC/Q2210", 4, 330, 14000, 0.50, 12, -0.04, 1.9, 12000, 0.9, "flat", 0),
-    ("2512.0100", "Junior Software Developer", "IT", "SSC/Q0508", 5, 600, 35000, 0.38, 6, 0.10, 0.85, 22000, 1.0, "flat", 0),
-    ("4132.0301", "AI Data Annotation Analyst", "IT", "SSC/Q8113", 4, 300, 15000, 0.52, 4, 0.48, 0.55, 14500, 0.8, "flat", 1),
-    ("9321.0100", "Warehouse Packer", "LG", "LSC/Q2305", 3, 240, 10000, 0.30, 16, 0.08, 1.0, 11500, 0.6, "lg", 0),
-    ("8321.0100", "Last-Mile Delivery Associate", "LG", "LSC/Q2304", 3, 200, 9000, 0.08, 20, 0.13, 0.75, 14000, 0.8, "lg", 0),
-    ("8344.0100", "Forklift Operator", "LG", "LSC/Q1104", 4, 300, 16000, 0.04, 6, 0.10, 0.8, 15500, 0.5, "lg", 0),
-    ("7127.0201", "Cold Chain Technician", "LG", "LSC/Q2601", 4, 380, 22000, 0.06, 2.5, 0.28, 0.6, 17000, 0.5, "flat", 1),
-    ("7112.0100", "Mason General", "CN", "CON/Q0102", 3, 300, 11000, 0.06, 18, 0.05, 0.9, 13000, 0.3, "cn", 0),
-    ("7411.0200", "Assistant Electrician", "CN", "CON/Q0602", 3, 360, 13000, 0.04, 12, 0.07, 1.2, 13500, 0.4, "cn", 0),
-    ("7114.0300", "Bar Bender & Steel Fixer", "CN", "CON/Q0204", 3, 280, 11000, 0.03, 9, 0.06, 0.7, 13000, 0.4, "cn", 0),
-    ("7126.0100", "Plumber General", "CN", "PSC/Q0104", 3, 300, 12000, 0.04, 8, 0.06, 0.9, 13500, 0.5, "cn", 0),
+    ("7421.1401", "Solar PV Installer (Suryamitra)", "RE", "SGJ/Q0101", 4, 420, 18000, 0.08, 9, 0.24, 0.7, 15500, 0.2, "re", 1),
+    ("3113.0102", "Wind Power Plant O&M Technician", "RE", "SGJ/Q1503", 4, 420, 24000, 0.05, 3, 0.15, 0.6, 18000, 0.1, "re", 1),
+    ("2151.0100", "Rooftop Solar Grid Junior Engineer", "RE", "SGJ/Q0106", 5, 540, 26000, 0.12, 4, 0.30, 0.65, 21000, 0.6, "re", 1),
+    ("8131.2100", "Green Hydrogen Plant Technician", "RE", "SGJ/Q0120", 4, 420, 32000, 0.10, 1.2, 0.55, 0.38, 24000, 0.3, "flat", 1),
+    ("8212.0300", "EV Battery System Repair Technician", "EV", "ELE/Q7001", 4, 450, 28000, 0.10, 5, 0.38, 0.5, 19000, 0.7, "flat", 1),
+    ("3115.0602", "Four Wheeler Service Technician", "EV", "ASC/Q1402", 4, 480, 22000, 0.06, 11, 0.04, 1.05, 15000, 0.5, "flat", 0),
+    ("7231.0501", "Two Wheeler Service Technician", "EV", "ASC/Q1411", 4, 480, 16000, 0.05, 13, 0.01, 1.35, 12500, 0.3, "flat", 0),
+    ("8212.0400", "Drone Service Technician", "EV", "ELE/Q7003", 4, 450, 30000, 0.14, 1.6, 0.42, 0.55, 20000, 0.6, "flat", 1),
+    ("5329.0101", "General Duty Assistant", "HC", "HSS/Q5101", 3, 600, 20000, 0.62, 14, 0.07, 1.1, 13500, 0.6, "flat", 0),
+    ("5322.0101", "Home Health Aide", "HC", "HSS/Q5102", 3, 900, 17000, 0.78, 8, 0.12, 0.9, 13000, 0.7, "flat", 0),
+    ("LMIS-MLT", "Medical Laboratory Technician", "HC", "HSS/Q0301", 4, 2000, 30000, 0.48, 5, 0.09, 0.8, 16500, 0.7, "flat", 0),
+    ("LMIS-EMT", "Emergency Medical Technician - Basic", "HC", "HSS/Q2301", 4, 450, 34000, 0.30, 3, 0.11, 0.75, 17000, 0.5, "flat", 0),
+    ("4132.0402", "Domestic Data Entry Operator", "IT", "SSC/Q2212", 3, 450, 12000, 0.55, 10, -0.09, 2.4, 10500, 0.7, "flat", 0),
+    ("5244.0101", "Customer Care Executive - Domestic Voice", "IT", "SSC/Q2210", 3, 450, 14000, 0.50, 12, -0.04, 1.9, 12000, 0.9, "flat", 0),
+    ("2512.0205", "Junior Software Developer", "IT", "SSC/Q0508", 4, 420, 35000, 0.38, 6, 0.10, 0.85, 22000, 1.0, "flat", 0),
+    ("LMIS-DANN", "Data Annotator", "IT", "SSC/Q8120", 4, 420, 15000, 0.52, 4, 0.48, 0.55, 14500, 0.8, "flat", 1),
+    ("4321.0603", "Warehouse Packer", "LG", "LSC/Q2303", 3, 360, 10000, 0.30, 16, 0.08, 1.0, 11500, 0.6, "lg", 0),
+    ("9621", "E-commerce Delivery Associate", "LG", "LSC/Q2603", 3, 540, 9000, 0.08, 20, 0.13, 0.75, 14000, 0.8, "lg", 0),
+    ("8344.0201", "Forklift Operator/Driver", "LG", "ASC/Q9707", 3, 270, 16000, 0.04, 6, 0.10, 0.8, 15500, 0.5, "lg", 0),
+    ("7127.0100", "Cold Storage Assistant Technician", "LG", "FICSI (QP code unverified)", 3, 300, 22000, 0.06, 2.5, 0.28, 0.6, 17000, 0.5, "flat", 1),
+    ("7122.0601", "Assistant Mason", "CN", "CON/Q0102", 3, 360, 11000, 0.06, 18, 0.05, 0.9, 13000, 0.3, "cn", 0),
+    ("7411.0100", "Assistant Electrician", "CN", "CON/Q0602", 3, 390, 13000, 0.04, 12, 0.07, 1.2, 13500, 0.4, "cn", 0),
+    ("7214.1101", "Bar Bender and Steel Fixer", "CN", "CON/Q0203", 4, 450, 11000, 0.03, 9, 0.06, 0.7, 13000, 0.4, "cn", 0),
+    ("7126.0101", "Plumber - General", "CN", "PSC/Q0104", 4, 480, 12000, 0.04, 8, 0.06, 0.9, 13500, 0.5, "cn", 0),
 ]
 TRADE_FIELDS = ["code", "title", "sector", "qp_code", "nsqf_level", "hours", "cost_per_seat", "women_share", "base", "growth", "supply_ratio", "entry_wage", "urban_affinity", "season", "emerging"]
 
@@ -101,82 +102,82 @@ SEASONS = {
 
 # Skills listed in the current NSQF QP (curriculum) and skills employers ask for (market).
 SKILLS = {
-    "7411.0101": (["solar panel installation", "dc wiring", "multimeter usage", "earthing", "electrical safety", "site survey", "inverter installation"],
+    "7421.1401": (["solar panel installation", "dc wiring", "multimeter usage", "earthing", "electrical safety", "site survey", "inverter installation"],
                   ["solar panel installation", "dc wiring", "inverter installation", "electrical safety", "net metering", "drone-based panel inspection", "string monitoring scada", "earthing"]),
-    "7412.0301": (["mechanical maintenance", "electrical safety", "working at height", "hydraulics", "multimeter usage"],
+    "3113.0102": (["mechanical maintenance", "electrical safety", "working at height", "hydraulics", "multimeter usage"],
                   ["working at height", "mechanical maintenance", "hydraulics", "condition monitoring", "scada operation", "electrical safety"]),
-    "3113.0102": (["solar panel installation", "load calculation", "autocad drafting", "net metering", "electrical safety", "inverter installation"],
+    "2151.0100": (["solar panel installation", "load calculation", "autocad drafting", "net metering", "electrical safety", "inverter installation"],
                   ["load calculation", "pvsyst design", "net metering", "inverter installation", "battery storage sizing", "autocad drafting", "customer handling"]),
-    "3133.0400": (["process safety", "gas handling", "plc basics", "electrical safety"],
+    "8131.2100": (["process safety", "gas handling", "plc basics", "electrical safety"],
                   ["electrolyser operation", "process safety", "gas handling", "plc basics", "hazop awareness", "scada operation"]),
-    "7231.0501": (["battery safety", "cell testing", "multimeter usage", "wiring harness", "bms basics", "electrical safety"],
+    "8212.0300": (["battery safety", "cell testing", "multimeter usage", "wiring harness", "bms basics", "electrical safety"],
                   ["battery safety", "cell testing", "bms diagnostics", "can bus diagnostics", "high-voltage safety", "thermal management", "wiring harness", "obd scanning"]),
-    "7231.0100": (["engine overhaul", "brake service", "obd scanning", "wiring harness", "customer handling"],
+    "3115.0602": (["engine overhaul", "brake service", "obd scanning", "wiring harness", "customer handling"],
                   ["engine overhaul", "obd scanning", "brake service", "ev basics", "adas calibration", "customer handling", "wiring harness"]),
-    "7231.0400": (["engine overhaul", "brake service", "carburettor tuning", "customer handling", "wiring harness"],
+    "7231.0501": (["engine overhaul", "brake service", "carburettor tuning", "customer handling", "wiring harness"],
                   ["engine overhaul", "brake service", "fuel injection service", "customer handling", "ev basics", "wiring harness"]),
-    "7421.0700": (["drone assembly", "soldering", "battery safety", "flight controller setup"],
+    "8212.0400": (["drone assembly", "soldering", "battery safety", "flight controller setup"],
                   ["drone assembly", "flight controller setup", "soldering", "dgca rules", "payload integration", "battery safety", "gis mapping"]),
-    "5321.0100": (["patient care", "vital signs", "infection control", "bed making", "first aid", "communication skills"],
+    "5329.0101": (["patient care", "vital signs", "infection control", "bed making", "first aid", "communication skills"],
                   ["patient care", "vital signs", "infection control", "first aid", "ehr data entry", "geriatric care", "communication skills"]),
-    "5322.0100": (["patient care", "vital signs", "first aid", "geriatric care", "communication skills", "nutrition basics"],
+    "5322.0101": (["patient care", "vital signs", "first aid", "geriatric care", "communication skills", "nutrition basics"],
                   ["geriatric care", "patient care", "vital signs", "first aid", "dementia care", "telehealth devices", "communication skills"]),
-    "3212.0100": (["sample collection", "microscopy", "infection control", "lab safety", "lis software"],
+    "LMIS-MLT": (["sample collection", "microscopy", "infection control", "lab safety", "lis software"],
                   ["sample collection", "lab safety", "lis software", "automated analyser operation", "quality control", "microscopy"]),
-    "3258.0100": (["first aid", "cpr", "patient transport", "vital signs", "communication skills"],
+    "LMIS-EMT": (["first aid", "cpr", "patient transport", "vital signs", "communication skills"],
                   ["cpr", "first aid", "trauma care", "patient transport", "ambulance gps systems", "vital signs"]),
-    "4132.0100": (["typing", "ms excel", "data validation", "communication skills"],
+    "4132.0402": (["typing", "ms excel", "data validation", "communication skills"],
                   ["typing", "ms excel", "data validation", "google sheets", "communication skills"]),
-    "4222.0100": (["communication skills", "crm software", "customer handling", "typing", "hindi english fluency"],
+    "5244.0101": (["communication skills", "crm software", "customer handling", "typing", "hindi english fluency"],
                   ["communication skills", "crm software", "customer handling", "hindi english fluency", "chat support", "typing"]),
-    "2512.0100": (["python", "sql", "html css", "git", "javascript"],
+    "2512.0205": (["python", "sql", "html css", "git", "javascript"],
                   ["python", "javascript", "sql", "git", "react", "cloud basics", "api integration", "genai tools"]),
-    "4132.0301": (["data labelling", "typing", "ms excel", "quality control"],
+    "LMIS-DANN": (["data labelling", "typing", "ms excel", "quality control"],
                   ["data labelling", "image annotation", "llm output evaluation", "quality control", "python", "typing", "ms excel"]),
-    "9321.0100": (["packing", "inventory handling", "warehouse safety", "barcode scanning"],
+    "4321.0603": (["packing", "inventory handling", "warehouse safety", "barcode scanning"],
                   ["packing", "barcode scanning", "inventory handling", "warehouse safety", "wms software"]),
-    "8321.0100": (["two-wheeler driving", "customer handling", "route planning", "cash handling"],
+    "9621": (["two-wheeler driving", "customer handling", "route planning", "cash handling"],
                   ["two-wheeler driving", "route planning", "customer handling", "delivery app usage", "upi payments", "ev two-wheeler riding"]),
-    "8344.0100": (["forklift operation", "warehouse safety", "load handling", "inventory handling"],
+    "8344.0201": (["forklift operation", "warehouse safety", "load handling", "inventory handling"],
                   ["forklift operation", "load handling", "warehouse safety", "reach truck operation", "wms software", "inventory handling"]),
-    "7127.0201": (["refrigeration basics", "electrical safety", "multimeter usage", "temperature logging"],
+    "7127.0100": (["refrigeration basics", "electrical safety", "multimeter usage", "temperature logging"],
                   ["refrigeration basics", "temperature logging", "iot sensor monitoring", "electrical safety", "reefer container service"]),
-    "7112.0100": (["brick laying", "plastering", "reading drawings", "site safety"],
+    "7122.0601": (["brick laying", "plastering", "reading drawings", "site safety"],
                   ["brick laying", "plastering", "site safety", "aac block laying", "reading drawings"]),
-    "7411.0200": (["electrical wiring", "earthing", "multimeter usage", "electrical safety", "conduit installation"],
+    "7411.0100": (["electrical wiring", "earthing", "multimeter usage", "electrical safety", "conduit installation"],
                   ["electrical wiring", "earthing", "electrical safety", "multimeter usage", "smart home wiring", "solar panel installation", "conduit installation"]),
-    "7114.0300": (["rebar cutting", "rebar tying", "reading drawings", "site safety"],
+    "7214.1101": (["rebar cutting", "rebar tying", "reading drawings", "site safety"],
                   ["rebar tying", "rebar cutting", "reading drawings", "site safety", "bbs calculation"]),
-    "7126.0100": (["pipe fitting", "leak testing", "site safety", "reading drawings"],
+    "7126.0101": (["pipe fitting", "leak testing", "site safety", "reading drawings"],
                   ["pipe fitting", "leak testing", "site safety", "cpvc jointing", "rainwater harvesting systems"]),
 }
 
 # Synonyms / raw job titles used to synthesise postings and to train the NCO auto-coder.
 TITLE_VARIANTS = {
-    "7411.0101": ["Solar PV Installer", "Solar Technician", "Solar Panel Fitter", "Suryamitra Technician", "Solar mistri", "Solar Installation Helper", "PV Module Installer"],
-    "7412.0301": ["Wind Turbine Technician", "WTG Technician", "Wind Farm Maintenance Tech", "Windmill Technician"],
-    "3113.0102": ["Rooftop Solar Engineer", "Solar Design Engineer", "Rooftop PV Site Engineer", "Solar Grid Engineer"],
-    "3133.0400": ["Green Hydrogen Operator", "Electrolyser Plant Operator", "Hydrogen Plant Technician"],
-    "7231.0501": ["EV Battery Technician", "Battery Pack Technician", "EV Technician Battery", "Lithium Battery Assembler", "BMS Technician"],
-    "7231.0100": ["Automobile Mechanic", "Car Service Technician", "Four Wheeler Mechanic", "Auto Technician", "Workshop Technician"],
-    "7231.0400": ["Two Wheeler Mechanic", "Bike Mechanic", "Scooter Service Technician", "2W Technician"],
-    "7421.0700": ["Drone Technician", "UAV Technician", "Drone Service Engineer", "Drone Assembly Tech"],
-    "5321.0100": ["General Duty Assistant", "Ward Boy", "GDA Hospital", "Patient Care Assistant", "Nursing Assistant"],
-    "5322.0100": ["Home Health Aide", "Elderly Caregiver", "Home Nursing Attendant", "Patient Caretaker Home"],
-    "3212.0100": ["Lab Technician", "Medical Lab Technician", "Phlebotomist", "Pathology Lab Assistant"],
-    "3258.0100": ["Emergency Medical Technician", "EMT Ambulance", "Ambulance Paramedic", "108 Ambulance EMT"],
-    "4132.0100": ["Data Entry Operator", "Computer Operator", "DEO", "Back Office Data Entry", "Typist Data Entry"],
-    "4222.0100": ["Customer Care Executive", "Telecaller", "BPO Voice Process", "Call Centre Executive", "CRM Executive"],
-    "2512.0100": ["Junior Software Developer", "Trainee Software Engineer", "Python Developer Fresher", "Web Developer Junior"],
-    "4132.0301": ["Data Annotation Analyst", "AI Data Labeller", "Image Annotator", "AI Training Data Associate"],
-    "9321.0100": ["Warehouse Packer", "Packing Helper", "Warehouse Associate", "Picker Packer"],
-    "8321.0100": ["Delivery Executive", "Delivery Boy", "Last Mile Delivery Partner", "Courier Delivery Associate", "Food Delivery Rider"],
-    "8344.0100": ["Forklift Operator", "Forklift Driver", "Reach Truck Operator", "Material Handling Operator"],
-    "7127.0201": ["Cold Chain Technician", "Refrigeration Technician", "Reefer Technician", "Cold Storage Technician"],
-    "7112.0100": ["Mason", "Raj Mistri", "Construction Mason", "Brick Mason"],
-    "7411.0200": ["Electrician", "Assistant Electrician", "Building Electrician", "Wireman", "Electrical Helper"],
-    "7114.0300": ["Bar Bender", "Steel Fixer", "Rebar Fitter", "Sariya Mistri"],
-    "7126.0100": ["Plumber", "Plumbing Technician", "Pipe Fitter Plumber", "Sanitary Plumber"],
+    "7421.1401": ["Solar PV Installer", "Solar Technician", "Solar Panel Fitter", "Suryamitra Technician", "Solar mistri", "Solar Installation Helper", "PV Module Installer"],
+    "3113.0102": ["Wind Turbine Technician", "WTG Technician", "Wind Farm Maintenance Tech", "Windmill Technician"],
+    "2151.0100": ["Rooftop Solar Engineer", "Solar Design Engineer", "Rooftop PV Site Engineer", "Solar Grid Engineer"],
+    "8131.2100": ["Green Hydrogen Operator", "Electrolyser Plant Operator", "Hydrogen Plant Technician"],
+    "8212.0300": ["EV Battery Technician", "Battery Pack Technician", "EV Technician Battery", "Lithium Battery Assembler", "BMS Technician"],
+    "3115.0602": ["Automobile Mechanic", "Car Service Technician", "Four Wheeler Mechanic", "Auto Technician", "Workshop Technician"],
+    "7231.0501": ["Two Wheeler Mechanic", "Bike Mechanic", "Scooter Service Technician", "2W Technician"],
+    "8212.0400": ["Drone Technician", "UAV Technician", "Drone Service Engineer", "Drone Assembly Tech"],
+    "5329.0101": ["General Duty Assistant", "Ward Boy", "GDA Hospital", "Patient Care Assistant", "Nursing Assistant"],
+    "5322.0101": ["Home Health Aide", "Elderly Caregiver", "Home Nursing Attendant", "Patient Caretaker Home"],
+    "LMIS-MLT": ["Lab Technician", "Medical Lab Technician", "Phlebotomist", "Pathology Lab Assistant"],
+    "LMIS-EMT": ["Emergency Medical Technician", "EMT Ambulance", "Ambulance Paramedic", "108 Ambulance EMT"],
+    "4132.0402": ["Data Entry Operator", "Computer Operator", "DEO", "Back Office Data Entry", "Typist Data Entry"],
+    "5244.0101": ["Customer Care Executive", "Telecaller", "BPO Voice Process", "Call Centre Executive", "CRM Executive"],
+    "2512.0205": ["Junior Software Developer", "Trainee Software Engineer", "Python Developer Fresher", "Web Developer Junior"],
+    "LMIS-DANN": ["Data Annotation Analyst", "AI Data Labeller", "Image Annotator", "AI Training Data Associate"],
+    "4321.0603": ["Warehouse Packer", "Packing Helper", "Warehouse Associate", "Picker Packer"],
+    "9621": ["Delivery Executive", "Delivery Boy", "Last Mile Delivery Partner", "Courier Delivery Associate", "Food Delivery Rider"],
+    "8344.0201": ["Forklift Operator", "Forklift Driver", "Reach Truck Operator", "Material Handling Operator"],
+    "7127.0100": ["Cold Chain Technician", "Refrigeration Technician", "Reefer Technician", "Cold Storage Technician"],
+    "7122.0601": ["Mason", "Raj Mistri", "Construction Mason", "Brick Mason"],
+    "7411.0100": ["Electrician", "Assistant Electrician", "Building Electrician", "Wireman", "Electrical Helper"],
+    "7214.1101": ["Bar Bender", "Steel Fixer", "Rebar Fitter", "Sariya Mistri"],
+    "7126.0101": ["Plumber", "Plumbing Technician", "Pipe Fitter Plumber", "Sanitary Plumber"],
 }
 
 # Share of a sector's project jobs that land in each trade (operations phase).
@@ -187,7 +188,7 @@ def staffing_shares(sector: str) -> dict[str, float]:
     return dict(zip(codes, weights))
 
 # Construction-phase demand for any project (masons, electricians, ...).
-CONSTRUCTION_SHARES = {"7112.0100": 0.35, "7411.0200": 0.3, "7114.0300": 0.2, "7126.0100": 0.15}
+CONSTRUCTION_SHARES = {"7122.0601": 0.35, "7411.0100": 0.3, "7214.1101": 0.2, "7126.0101": 0.15}
 
 # Investment pipeline (announced projects). jobs_ops = permanent skilled roles; jobs_build = construction phase.
 INVESTMENTS = [
@@ -221,3 +222,33 @@ def load_districts() -> list[dict]:
 
 def trades() -> list[dict]:
     return [dict(zip(TRADE_FIELDS, t)) for t in TRADES]
+
+
+NQR = "https://www.nqr.gov.in/qualifications/"
+# Provenance of each trade's codes: nco (verified NCO-2015 code or None), status per field, official QP title, source, note.
+VERIFICATION = {
+    "7421.1401": dict(nco="7421.1401", nco_status="verified", qp_status="verified", qp_title="Solar PV Installer (Suryamitra), QP v4.0", source=NQR + "11198", note="Valid to 30/05/2027"),
+    "3113.0102": dict(nco="3113.0102", nco_status="verified", qp_status="closest", qp_title="O&M Electrical & Instrumentation Technician - Wind Power Plant", source=NQR + "4158", note="No 'Wind Turbine Technician' QP exists; closest QP, archived (valid to 24/11/2024)"),
+    "2151.0100": dict(nco="2151.0100", nco_status="verified", qp_status="old version", qp_title="Rooftop Solar Grid Junior Engineer", source=NQR + "11564", note="SGJ/Q0106 verified for the predecessor title 'Rooftop Solar Grid Engineer'"),
+    "8131.2100": dict(nco="8131.2100", nco_status="verified", qp_status="closest", qp_title="Green Hydrogen Plant Technician", source=NQR + "12063", note="No Operator QP; QP code from PSSCIVE curriculum; valid to 31/01/2026"),
+    "8212.0300": dict(nco="8212.0300", nco_status="verified", qp_status="closest", qp_title="Battery System Repair Technician (ESSCI)", source=NQR + "2256", note="No exact EV-battery QP; alternative ASC/Q1429 Electric Vehicle Service Technician (NQR 13239)"),
+    "3115.0602": dict(nco="3115.0602", nco_status="verified", qp_status="verified", qp_title="Four Wheeler Service Technician", source=NQR + "12211", note="Valid to 27/08/2027"),
+    "7231.0501": dict(nco="7231.0501", nco_status="verified", qp_status="verified", qp_title="Two Wheeler Service Technician", source=NQR + "9528", note="Valid to 22/09/2025; no newer active version found"),
+    "8212.0400": dict(nco="8212.0400", nco_status="verified", qp_status="verified", qp_title="Drone Service Technician, QP v3", source=NQR + "13005", note="Valid to 17/12/2027"),
+    "5329.0101": dict(nco="5329.0101", nco_status="conflict", qp_status="verified", qp_title="General Duty Assistant / General Duty Aide (v4.0)", source="https://healthcare-ssc.in/pdf/2026/HSS_Q5101_v4.0.pdf", note="QP v4 gives NCO 5329.0101; the NQR file lists 2240.0400"),
+    "5322.0101": dict(nco="5322.0101", nco_status="conflict", qp_status="verified", qp_title="Home Health Aide, QP v4", source="https://healthcare-ssc.in/pdf/2026/HSS_Q5102_v4.0.pdf", note="QP v4 gives NCO 5322.0101; the NQR file lists 2240.0400"),
+    "LMIS-MLT": dict(nco=None, nco_status="unverified", qp_status="verified", qp_title="Medical Laboratory Technician", source="https://nqr.gov.in/sites/default/files/NSQF-%20Medical%20Laboratory%20Technician.pdf", note="Archived QP; NCO-2015 code not stated. Active alternative: Phlebotomist HSS/Q0501"),
+    "LMIS-EMT": dict(nco=None, nco_status="unverified", qp_status="verified", qp_title="Emergency Medical Technician-Basic, QP v3", source=NQR + "4298", note="NCO-2015 code not found; valid to 31/05/2026"),
+    "4132.0402": dict(nco="4132.0402", nco_status="verified", qp_status="verified", qp_title="Domestic Data Entry Operator", source=NQR + "2580", note="QP code from official file name; valid to 30/12/2024, no active successor found"),
+    "5244.0101": dict(nco="5244.0101", nco_status="verified", qp_status="verified", qp_title="Customer Care Executive-Domestic-Voice", source=NQR + "2577", note="Valid to 30/12/2024; active alternative SSC/Q2202 (NQR 13631)"),
+    "2512.0205": dict(nco="2512.0205", nco_status="verified", qp_status="old version", qp_title="Junior Software Developer", source=NQR + "13434", note="Current version is NSQF 4; QP code verified on the previous version"),
+    "LMIS-DANN": dict(nco=None, nco_status="not assigned", qp_status="verified", qp_title="Data Annotator", source=NQR + "13281", note="NQR lists NCO-2015 as NIL"),
+    "4321.0603": dict(nco="4321.0603", nco_status="verified", qp_status="verified", qp_title="Warehouse Packer", source=NQR + "11651", note="Valid to 27/01/2025; active umbrella QP Warehouse Associate LSC/Q0101"),
+    "9621": dict(nco="9621", nco_status="verified (unit group)", qp_status="closest", qp_title="E-commerce Delivery Associate", source=NQR + "9927", note="NQR gives only the 4-digit NCO unit group"),
+    "8344.0201": dict(nco="8344.0201", nco_status="verified", qp_status="verified", qp_title="Forklift Operator/Driver (ASDC)", source=NQR + "13242", note="Valid to 18/02/2028"),
+    "7127.0100": dict(nco="7127.0100", nco_status="verified", qp_status="unverified", qp_title="Assistant Technician - Cold Storage (FICSI)", source=NQR + "12727", note="Closest QP; QP code not confirmed (NCO printed as 7127.0.100)"),
+    "7122.0601": dict(nco="7122.0601", nco_status="verified", qp_status="verified", qp_title="Assistant Mason", source=NQR + "9796", note="No 'Mason General' QP; Brick Mason is CON/Q0113 (NQR 13899)"),
+    "7411.0100": dict(nco="7411.0100", nco_status="verified", qp_status="verified", qp_title="Assistant Electrician", source=NQR + "13772", note="Valid to 30/04/2028"),
+    "7214.1101": dict(nco="7214.1101", nco_status="verified", qp_status="verified", qp_title="Bar Bender and Steel Fixer", source=NQR + "13852", note="Valid to 30/04/2028"),
+    "7126.0101": dict(nco="7126.0101", nco_status="verified", qp_status="old version", qp_title="Plumber - General (WMPS)", source=NQR + "12957", note="PSC/Q0104 is the old IPSC code; current WMPS QP code not confirmed"),
+}

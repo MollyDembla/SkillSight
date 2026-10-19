@@ -563,6 +563,16 @@ def revoke_key(kid: int):
         c.close()
 
 
+@router.get("/official", tags=["reference"])
+def official_context(state: Optional[str] = None):
+    """Official EPFO payroll and PLFS indicators (real, with source URLs) alongside the demand index."""
+    c = _db()
+    try:
+        return services.official_context(c, state)
+    finally:
+        c.close()
+
+
 @router.get("/methodology/metrics", tags=["reference"])
 def methodology_metrics():
     c = _db()

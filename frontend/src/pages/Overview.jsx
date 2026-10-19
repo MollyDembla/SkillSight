@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { compact, fmt, pct, qs, useApi } from '../api.js'
 import { FanChart, FanTable, GapBars } from '../components/charts.jsx'
 import IndiaMap from '../components/IndiaMap.jsx'
+import { OfficialStrip } from '../components/OfficialContext.jsx'
 import { Card, ChartFrame, ErrorBox, gapColor, Kpi, PageHeader, Section, Skeleton, StatusBadge, StatusLegend, Table, speak } from '../components/ui.jsx'
 
 export function DistrictTip({ p, v, t }) {
@@ -58,6 +59,7 @@ export default function Overview({ ctx }) {
       <ChartFrame title={t('t.top_surplus')} subtitle="Candidates for seat reduction, repurposing or bridge courses" chart={<GapBars items={d.top_surpluses.map((x) => ({ ...x, label: x.title }))} onClick={(x) => ctx.go('trades', { code: x.trade_code })} />}
         table={<TradeTable rows={d.top_surpluses} t={t} />} />
     </div>}
+    <div className="mt-3"><OfficialStrip state={state} onOpen={() => ctx.go('data', { tab: 'official' })} /></div>
     {d?.pipeline && <Card className="mt-3"><Section title="Engine status" subtitle={`Last refresh ${d.pipeline.finished_at} UTC · trigger: ${d.pipeline.trigger} · ${d.pipeline.summary.duration_s}s`} />
       <div className="grid gap-3 text-[.8rem] sm:grid-cols-2 xl:grid-cols-4">
         <Metric label="Demand-index error (vs. simulated truth)" value={pct(d.pipeline.summary.uldi.validation.uldi_wape, 1)} note={`best single source ${pct(Math.min(d.pipeline.summary.uldi.validation.portal_only_wape, d.pipeline.summary.uldi.validation.ncs_only_wape, d.pipeline.summary.uldi.validation.epfo_only_wape), 1)}`} />

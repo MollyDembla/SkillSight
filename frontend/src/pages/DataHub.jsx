@@ -2,14 +2,16 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { api, fmt, pct, qs, useApi } from '../api.js'
 import { Button, Card, ErrorBox, PageHeader, Section, Skeleton, Table, Tabs } from '../components/ui.jsx'
+import { OfficialPanel } from '../components/OfficialContext.jsx'
 
 export default function DataHub({ ctx }) {
   const { t } = useTranslation()
-  const [tab, setTab] = useState('sources')
+  const [tab, setTab] = useState(ctx.params.tab || 'sources')
   return <>
     <PageHeader title={t('nav.data')} subtitle="Every signal keeps its provenance. Heterogeneous sources are harmonised (LGD districts, NCO-2015 codes), de-duplicated, benchmarked and fused into the Unified Labour Demand Index with weights the engine re-learns on every refresh." />
-    <Tabs tabs={[['sources', 'Sources & fusion'], ['runs', 'Refresh runs'], ['coder', 'NCO auto-coder'], ['postings', 'Job postings'], ['import', 'Import data']]} value={tab} onChange={setTab} />
+    <Tabs tabs={[['sources', 'Sources & fusion'], ['official', 'Official statistics'], ['runs', 'Refresh runs'], ['coder', 'NCO auto-coder'], ['postings', 'Job postings'], ['import', 'Import data']]} value={tab} onChange={setTab} />
     {tab === 'sources' && <Sources />}
+    {tab === 'official' && <OfficialPanel state={ctx.filters.state} />}
     {tab === 'runs' && <Runs ctx={ctx} />}
     {tab === 'coder' && <Coder />}
     {tab === 'postings' && <Postings />}

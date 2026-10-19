@@ -7,7 +7,7 @@ All tables are defined in `backend/schema.sql`. Bundled rows are synthetic (`sou
 | Table | Key fields | Notes |
 |---|---|---|
 | `districts` | `lgd`, `state`, `district`, `lat`, `lon`, `urban`, `pop_weight`, `aspirational` | 170 pilot districts; codes from Census 2011 boundary data; aspirational = NITI Aayog list |
-| `trades` | `code` (NCO-2015), `title`, `sector`, `qp_code`, `nsqf_level`, `hours`, `cost_per_seat` (₹), `women_share`, `entry_wage` (₹/month), `emerging` | Codes are illustrative pilot mappings |
+| `trades` | `code` (verified NCO-2015 code, or an internal `LMIS-` id when NCO has none), `title`, `sector`, `qp_code`, `nsqf_level`, `hours`, `cost_per_seat` (₹), `women_share`, `entry_wage` (₹/month), `emerging`, `nco_code`, `nco_status`, `qp_status`, `qp_title`, `source_url`, `code_note` | Codes checked against nqr.gov.in and Sector Skill Council QP lists; status and source per trade |
 | `qp_skills` | `trade_code`, `skill` | Skills listed in the current QP |
 
 ## Sources and raw data
@@ -17,12 +17,13 @@ All tables are defined in `backend/schema.sql`. Bundled rows are synthetic (`sou
 | `sources` | `key`, `name`, `source_type`, `access_method`, `grain`, `lag_months`, `side`, `is_synthetic` | Provenance registry; imports get `key = import-<id>` |
 | `signals` | `source_id`, `period` (YYYY-MM), `lgd`, `sector`, `trade_code` ('' when sector-level), `value` | Aggregate counts |
 | `benchmarks` | `state`, `sector`, `fy`, `hires` | Annual anchor for coverage |
-| `plfs` | `state`, `quarter`, `youth_ur`, `lfpr` | Context |
+| `plfs` | `state`, `quarter`, `youth_ur`, `lfpr` | Legacy, now empty: replaced by official PLFS figures in `official_stats` |
 | `postings` | `portal`, `posted_on`, `lgd`, `employer`, `raw_title`, `description`, `salary`, `gold_code`, `nco_code`, `nco_conf`, `coder`, `cluster_id`, `ghost` | `eval_code` holds simulation truth for evaluation only |
 | `investments` | `name`, `lgd`, `sector`, `capex_cr`, `jobs_ops`, `jobs_build`, `announced`, `build_start`, `ops_start`, `ramp_months` | Leading indicator |
 | `centres` | `lgd`, `name`, `scheme`, `capacity`, `lat`, `lon` | Training centres |
 | `supply` | `centre_id`, `trade_code`, `fy`, `seats`, `enrolled`, `completed`, `certified`, `placed`, `avg_wage`, `women` | FY 2026-27 is in progress (no completions yet) |
 | `migration` | `origin_lgd`, `dest_lgd`, `sector`, `share` | Share of certified workers who move |
+| `official_stats` | `source` (EPFO / PLFS), `period`, `state`, `indicator`, `value`, `definition`, `url` | Real published figures, one source URL per value (`backend/data/official_stats.csv`) |
 | `synthetic_truth` | `period`, `lgd`, `trade_code`, `openings` | Simulation ground truth; used only to validate |
 
 ## Pipeline outputs

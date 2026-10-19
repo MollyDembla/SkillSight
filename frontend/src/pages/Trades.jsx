@@ -7,7 +7,7 @@ const MODEL_LABEL = { ensemble: 'Ensemble (deployed)', global_gbm: 'Global gradi
 
 export default function Trades({ ctx }) {
   const { t } = useTranslation()
-  const code = ctx.params.code || '7231.0501'
+  const code = ctx.params.code || '8212.0300'
   const node = ctx.params.node || (ctx.filters.state ? `ST:${ctx.filters.state}` : 'IN')
   const trade = ctx.ref.trades.find((x) => x.code === code)
   const s = useApi(`/api/v1/trades/${code}/series?${qs({ node })}`)
@@ -21,7 +21,12 @@ export default function Trades({ ctx }) {
   const last12 = s.data?.history.slice(-12).reduce((a, h) => a + h.actual, 0)
   const uplift = s.data?.forecast.slice(0, 12).reduce((a, f) => a + f.invest_effect, 0)
   return <>
-    <PageHeader title={t('nav.trades')} subtitle={trade ? `${trade.title} · NCO-2015 ${trade.code} · QP ${trade.qp_code} · NSQF level ${trade.nsqf_level} · ${trade.sector_name}${trade.emerging ? ' · emerging trade' : ''}` : ''} />
+    <PageHeader title={t('nav.trades')} subtitle={trade ? `${trade.title} · NCO-2015 ${trade.nco_code || 'not verified'} · QP ${trade.qp_code} · NSQF level ${trade.nsqf_level} · ${trade.hours} h · ${trade.sector_name}${trade.emerging ? ' · emerging trade' : ''}` : ''} />
+    {trade && <div className="mb-3 flex flex-wrap items-center gap-2 text-[.75rem]">
+      <span className="chip">NCO: {trade.nco_status}</span><span className="chip">QP: {trade.qp_status}</span>
+      <span className="ink2">Official QP: {trade.qp_title}{trade.code_note ? ` · ${trade.code_note}` : ''}</span>
+      <a className="underline" href={trade.source_url} target="_blank" rel="noreferrer">source ↗</a>
+    </div>}
     <div className="mb-3 flex flex-wrap gap-2.5">
       <Select label={t('f.trade')} value={code} onChange={(v) => ctx.go('trades', { code: v, node })} options={ctx.ref.trades.map((x) => [x.code, `${x.title}`])} />
       <Select label="Geography" value={node} onChange={(v) => ctx.go('trades', { code, node: v })} options={nodeOptions} className="min-w-[14rem]" />
@@ -29,7 +34,7 @@ export default function Trades({ ctx }) {
     {s.error && <ErrorBox error={s.error} />}
     {s.data && <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
       <Kpi label="Last 12 months (index)" value={fmt(last12)} /><Kpi label="Next 12 months (P50)" value={fmt(next12)} note={pct(next12 / Math.max(1, last12) - 1, 1, true)} />
-      <Kpi label="From announced projects" value={fmt(uplift)} note="counterfactual: pipeline frozen" /><Kpi label={t('t.trust')} value={pct(s.data.history.at(-1)?.trust)} note="latest month" />
+      <Kpi label="Investment hiring waves (net)" value={`${uplift > 0 ? "+" : ""}${fmt(uplift)}`} note="vs. pipeline frozen today; negative = a hiring wave fading" /><Kpi label={t('t.trust')} value={pct(s.data.history.at(-1)?.trust)} note="latest month" />
     </div>}
     <div className="mt-3 grid gap-3 xl:grid-cols-[1.6fr_1fr]">
       {s.data ? <ChartFrame title={t('t.trend')} subtitle={`Orange = what the model forecast at ${lastOrigin || '–'} (accountability ledger)`} chart={<FanChart data={data} ledger={led} height={320} />} table={<FanTable data={data} />} /> : <Skeleton h={380} />}

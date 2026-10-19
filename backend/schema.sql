@@ -9,7 +9,9 @@ CREATE TABLE IF NOT EXISTS districts (
 CREATE TABLE IF NOT EXISTS trades (
  code TEXT PRIMARY KEY, title TEXT NOT NULL, sector TEXT NOT NULL, sector_name TEXT NOT NULL, qp_code TEXT NOT NULL,
  nsqf_level INTEGER NOT NULL, hours INTEGER NOT NULL, cost_per_seat INTEGER NOT NULL, women_share REAL NOT NULL,
- entry_wage INTEGER NOT NULL, emerging INTEGER NOT NULL DEFAULT 0
+ entry_wage INTEGER NOT NULL, emerging INTEGER NOT NULL DEFAULT 0,
+ nco_code TEXT, nco_status TEXT NOT NULL DEFAULT '', qp_status TEXT NOT NULL DEFAULT '', qp_title TEXT NOT NULL DEFAULT '',
+ source_url TEXT NOT NULL DEFAULT '', code_note TEXT NOT NULL DEFAULT ''
 );
 CREATE TABLE IF NOT EXISTS qp_skills (
  trade_code TEXT NOT NULL REFERENCES trades(code), skill TEXT NOT NULL, PRIMARY KEY(trade_code, skill)
@@ -111,4 +113,9 @@ CREATE TABLE IF NOT EXISTS webhooks (
 CREATE TABLE IF NOT EXISTS ledger (
  node TEXT NOT NULL, trade_code TEXT NOT NULL, origin TEXT NOT NULL, period TEXT NOT NULL, forecast REAL NOT NULL,
  actual REAL NOT NULL, PRIMARY KEY(node, trade_code, origin, period)
+);
+-- Official published statistics (real, with source URL per value). Loaded from backend/data/official_stats.csv.
+CREATE TABLE IF NOT EXISTS official_stats (
+ source TEXT NOT NULL, period TEXT NOT NULL, state TEXT NOT NULL, indicator TEXT NOT NULL, value REAL NOT NULL,
+ definition TEXT NOT NULL DEFAULT '', url TEXT NOT NULL, PRIMARY KEY(source, period, state, indicator)
 );

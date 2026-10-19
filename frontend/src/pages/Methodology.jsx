@@ -38,7 +38,7 @@ export default function Methodology() {
           {m.data ? <Table rows={Object.values(m.data.source_weights.reduce((acc, w) => { (acc[w.sector] ||= { sector: w.sector })[w.source_key] = w.weight; return acc }, {}))}
             columns={[{ key: 'sector', label: 'Sector' }, { key: 'portal', label: 'Portals', num: true, render: (r) => pct(r.portal) }, { key: 'ncs', label: 'NCS', num: true, render: (r) => pct(r.ncs) }, { key: 'epfo', label: 'EPFO', num: true, render: (r) => pct(r.epfo) }]} /> : <Skeleton h={160} />}
         </Card>
-        <Card><Section title="Governance" /><p className="m-0 text-[.82rem] leading-6 ink2">Aggregate, non-personal data only. Every row carries source provenance; imported data is held for review before fusion. Recommendations are advisory and require planner review. LLM outputs are grounded in tool calls on computed tables and labelled; the system works fully offline without them. NCO / QP mappings in the pilot are illustrative and must be verified against the official registers.</p></Card>
+        <Card><Section title="Governance" /><p className="m-0 text-[.82rem] leading-6 ink2">Aggregate, non-personal data only. Every row carries source provenance; imported data is held for review before fusion. Recommendations are advisory and require planner review. LLM outputs are grounded in tool calls on computed tables and labelled; the system works fully offline without them. Trade codes are checked against the National Qualifications Register and Sector Skill Council QP lists; each trade shows its verification status and source in the Trade explorer.</p></Card>
       </div>
     </div>
   </>

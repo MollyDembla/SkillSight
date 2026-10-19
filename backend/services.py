@@ -176,7 +176,8 @@ def reference(c) -> dict:
 def sources(c) -> list[dict]:
     out = rows(c, """SELECT s.*, COUNT(sg.value) rows, MIN(sg.period) first_period, MAX(sg.period) last_period FROM sources s
                      LEFT JOIN signals sg ON sg.source_id = s.id GROUP BY s.id ORDER BY s.id""")
-    extra = {"postings": "SELECT COUNT(*) FROM postings", "sidh": "SELECT COUNT(*) FROM supply", "plfs": "SELECT COUNT(*) FROM plfs",
+    extra = {"postings": "SELECT COUNT(*) FROM postings", "sidh": "SELECT COUNT(*) FROM supply",
+             "official-epfo": "SELECT COUNT(*) FROM official_stats WHERE source='EPFO'", "official-plfs": "SELECT COUNT(*) FROM official_stats WHERE source='PLFS'",
              "benchmark": "SELECT COUNT(*) FROM benchmarks", "invest": "SELECT COUNT(*) FROM investments WHERE hypothetical=0"}
     weights = defaultdict(dict)
     for w in rows(c, "SELECT * FROM source_weights"):
@@ -186,3 +187,24 @@ def sources(c) -> list[dict]:
             s["rows"] = c.execute(extra[s["key"]]).fetchone()[0]
         s["weights"] = weights.get(s["key"], {})
     return out
+
+
+def official_context(c, state: str | None = None) -> dict:
+    """Real published EPFO / PLFS figures next to the (synthetic, state-anchored) demand index."""
+    states = [state] if state else [r["state"] for r in rows(c, "SELECT DISTINCT state FROM districts ORDER BY state")]
+    epfo = rows(c, f"""SELECT period, state, value, definition, url FROM official_stats WHERE source='EPFO' AND indicator='net_payroll_latest'
+                      AND state IN ({','.join('?' * len(states))}, 'All India') ORDER BY period""", states)
+    plfs = rows(c, f"""SELECT period, state, indicator, value, definition, url FROM official_stats WHERE source='PLFS'
+                      AND state IN ({','.join('?' * len(states))}, 'All India') ORDER BY period""", states)
+    idx = rows(c, f"""SELECT u.period, d.state, SUM(u.openings) openings FROM uldi u JOIN districts d USING(lgd)
+                     WHERE d.state IN ({','.join('?' * len(states))}) GROUP BY u.period, d.state ORDER BY u.period""", states)
+    fy = rows(c, "SELECT period, state, value FROM official_stats WHERE source='EPFO' AND indicator='net_payroll_fy'")
+    pilot = {r["state"]: r["value"] for r in fy if r["period"] == "FY2024-25" and r["state"] != "All India"}
+    tot = sum(pilot.values()) or 1
+    sim = {r["state"]: r["v"] for r in rows(c, """SELECT d.state, SUM(u.openings * CASE t.sector WHEN 'IT' THEN 0.85 WHEN 'EV' THEN 0.7 WHEN 'RE' THEN 0.6
+                     WHEN 'HC' THEN 0.55 WHEN 'LG' THEN 0.45 ELSE 0.15 END) v FROM uldi u JOIN districts d USING(lgd) JOIN trades t ON t.code=u.trade_code GROUP BY d.state""")}
+    stot = sum(sim.values()) or 1
+    shares = [{"state": st, "official_epfo_share": round(pilot.get(st, 0) / tot, 4), "index_formal_share": round(sim.get(st, 0) / stot, 4)} for st in sorted(pilot)]
+    return {"epfo": epfo, "plfs": plfs, "index": idx, "shares": shares,
+            "note": "EPFO and PLFS values are real published figures (latest vintage; see each row's source). District x trade detail remains synthetic, "
+                    "with state sizes anchored to official EPFO net-payroll shares - so the share comparison agrees by construction and is not a validation."}
